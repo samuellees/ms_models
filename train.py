@@ -27,6 +27,7 @@ from mindspore import context
 from mindspore.train.callback import ModelCheckpoint, CheckpointConfig, LossMonitor, TimeMonitor
 from mindspore.train import Model
 from mindspore.nn.metrics import Accuracy
+from mindspore.nn.dynamic_lr import exponential_decay_lr
 
 
 if __name__ == "__main__":
@@ -42,12 +43,19 @@ if __name__ == "__main__":
         args.dataset_sink_mode = False
 
     context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target)
-    ds_train = create_dataset(args.data_path, cfg.batch_size, cfg.epoch_size)
 
     network = Inceptionv3(cfg.num_classes)
-    net_loss = nn.SoftmaxCrossEntropyWithLogits(is_grad=False, sparse=True, reduction="mean")
-    # net_opt = nn.RMSProp(network.trainable_params(), learning_rate=cfg.lr, weight_decay=cfg.decay)
-    net_opt = nn.Momentum(network.trainable_params(), cfg.lr, 0.9)
+    net_loss = nn.SoftmaxCrossEntropyWithLogits(is_grad=False, sparse=True, 
+                reduction="mean", smooth_factor=cfg.label_smoothing_eps)
+    ds_train = create_dataset(args.data_path, cfg.batch_size, cfg.epoch_size)
+    step_per_epoch = ds_train.get_dataset_size()
+    total_step = step_per_epoch * cfg.epoch_size
+    lr = exponential_decay_lr(learning_rate=cfg.lr_init, 
+            decay_rate=cfg.lr_decay_rate, total_step=total_step, 
+            step_per_epoch=step_per_epoch, decay_epoch=cfg.lr_decay_epoch)
+    net_opt = nn.RMSProp(network.trainable_params(), learning_rate=lr, 
+                decay=cfg.rmsprop_decay, momentum=cfg.rmsprop_momentum, 
+                epsilon=cfg.rmsprop_epsilon)
     time_cb = TimeMonitor(data_size=ds_train.get_dataset_size())
     config_ck = CheckpointConfig(save_checkpoint_steps=cfg.save_checkpoint_steps,
                                  keep_checkpoint_max=cfg.keep_checkpoint_max)

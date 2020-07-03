@@ -56,8 +56,9 @@ class Inceptionv3(nn.Cell):
         # N x 768 x 17 x 17
         self.Mixed_6e = InceptionBlockB_2(in_channels=768, var_channels=192)
         # N x 768 x 17 x 17
-        # if create_aux_logits:
-        #     self.AuxLogits = InceptionBlockAux(in_channels=768, num_classes=num_classes)
+        if create_aux_logits:
+            self.AuxLogits = InceptionBlockAux(in_channels=768, num_classes=num_classes)
+        # N x 768 x 17 x 17
         self.Mixed_7a = InceptionBlockC_1(in_channels=768)
         # N x 1280 x 8 x 8
         self.Mixed_7b = InceptionBlockC_2(in_channels=1280)
@@ -68,7 +69,8 @@ class Inceptionv3(nn.Cell):
         # N x 2048 x 1 x 1
         self.Dropout_last = nn.Dropout(keep_prob=0.8)
         # N x 2048 x 1 x 1
-        self.Conv2d_last = Conv2dBlock(in_channels=2048, out_channels=num_classes, kernel_size=1)
+        self.Conv2d_last = Conv2dBlock(in_channels=2048, out_channels=num_classes, 
+                                kernel_size=1, with_relu=False, with_bn=False)
         # N x num_classes x 1 x 1
         self.flatten = nn.Flatten()
         # N x num_classes
@@ -105,12 +107,10 @@ class Inceptionv3(nn.Cell):
         # N x 768 x 17 x 17
         x = self.Mixed_6e(x)
         # N x 768 x 17 x 17
-
-        # if self.create_aux_logits:
-        #     aux = self.AuxLogits(x)
-        # else:
-        #     aux = None
-
+        if self.create_aux_logits:
+            aux = self.AuxLogits(x)
+        else:
+            aux = None
         # N x 768 x 17 x 17
         x = self.Mixed_7a(x)
         # N x 1280 x 8 x 8
@@ -126,8 +126,10 @@ class Inceptionv3(nn.Cell):
         # N x num_classes x 1 x 1
         x = self.flatten(x)
         # N x num_classes
+        # if self.create_aux_logits:
+        #     return x, aux
+        # else:
         return x
-        # return x, aux
 
 class InceptionBlockA(nn.Cell):
     
@@ -246,24 +248,27 @@ class InceptionBlockC_2(nn.Cell):
         branch_4 = self.branch_4(x)
         return self.concat((branch_1, branch_2, branch_3, branch_4))
 
-# class InceptionBlockAux(nn.Cell):
+class InceptionBlockAux(nn.Cell):
     
-#     def __init__(self, in_channels, num_classes):
-#         super(InceptionBlockAux, self).__init__()
-#         self.pool = nn.AvgPool2d(kernel_size=5, stride=3, pad_mode='valid')
-#         self.conv_1 = Conv2dBlock(in_channels, out_channels=128, kernel_size=1)
-#         self.conv_3 = Conv2dBlock(in_channels=768, out_channels=num_classes, kernel_size=1, weight_init=TruncatedNormal(0.001), activations=None)
-#         self.flatten = nn.Flatten()
+    def __init__(self, in_channels, num_classes):
+        super(InceptionBlockAux, self).__init__()
+        self.pool = nn.AvgPool2d(kernel_size=5, stride=3, pad_mode='valid')
+        self.conv_1 = Conv2dBlock(in_channels, out_channels=128, kernel_size=1)
+        # ksize = auto_kernel_size_for_small_input(x, [5, 5])
+        # self.conv_2 = Conv2dBlock(in_channels=128, out_channels=768, kernel_size=ksize, pad_mode="valid", weight_init=TruncatedNormal(0.01))
+        self.conv_2 = nn.SequentialCell([
+                        Conv2dBlock(in_channels=128, out_channels=768, kernel_size=1, weight_init=TruncatedNormal(0.01)),
+                        P.ReduceMean(keep_dims=True, axis=(2, 3))])
+        self.conv_3 = Conv2dBlock(in_channels=768, out_channels=num_classes, kernel_size=1, weight_init=TruncatedNormal(0.001), with_relu=False)
+        self.flatten = nn.Flatten()
 
-#     def construct(self, x):
-#         x = self.pool(x)
-#         x = self.conv_1(x)
-#         ksize = auto_kernel_size_for_small_input(x, [5, 5])
-#         conv_2 = Conv2dBlock(in_channels=128, out_channels=768, kernel_size=ksize, pad_mode="valid", weight_init=TruncatedNormal(0.01))
-#         x = conv_2(x)
-#         x = self.conv_3(x)
-#         x = self.flatten(x)
-#         return x
+    def construct(self, x):
+        x = self.pool(x)
+        x = self.conv_1(x)
+        x = self.conv_2(x)
+        x = self.conv_3(x)
+        x = self.flatten(x)
+        return x
 
 class Conv2dBlock(nn.Cell):
     """
@@ -281,20 +286,22 @@ class Conv2dBlock(nn.Cell):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, 
-                pad_mode="same", padding=0, weight_init="XavierUniform", with_relu=True):
+                pad_mode="same", padding=0, weight_init="XavierUniform", with_relu=True, with_bn=True):
         super(Conv2dBlock, self).__init__()
+        self.with_bn = with_bn
+        self.with_relu = with_relu
         self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, 
                               kernel_size=kernel_size, stride=stride, pad_mode=pad_mode,
                               padding=padding, weight_init=weight_init)
-        self.bn = nn.BatchNorm2d(out_channels, eps=0.001)
-        self.with_relu = with_relu
-        self.relu = None
+        if (with_bn):
+            self.bn = nn.BatchNorm2d(out_channels, eps=0.001)
         if (with_relu):
             self.relu = nn.ReLU()
     
     def construct(self, x):
         x = self.conv(x)
-        x = self.bn(x)
+        if self.with_bn:
+            x = self.bn(x)
         if self.with_relu:
             x = self.relu(x)
         return x

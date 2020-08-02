@@ -15,6 +15,7 @@
 # ============================================================================
 
 PATH1="../datasets/cifar-10-batches-bin"
+PATH2="./train/summary"
 
 get_real_path(){
   if [ "${1:0:1}" == "/" ]; then
@@ -25,6 +26,7 @@ get_real_path(){
 }
 
 PATH1=$(get_real_path $PATH1)
+PATH2=$(get_real_path $PATH2)
 
 if [ ! -d "$PATH1" ]
 then 
@@ -36,6 +38,7 @@ export DEVICE_NUM=1
 export DEVICE_ID=0
 export RANK_ID=0
 
+# mkdir ./train and enter ./train
 if [ -d "train" ];
 then
     rm -rf ./train
@@ -44,7 +47,9 @@ mkdir ./train
 cp -r src ./train
 cp *.py ./train
 cd ./train || exit
+mkdir $PATH2
+
 echo "start training for device $DEVICE_ID"
-python train.py --data_path=$PATH1 --device_target=GPU
-# python train.py --data_path=$PATH1 --device_target=GPU &> log &
+python train.py --data_path=$PATH1 --summary_path=$PATH2 --device_target=GPU
+# python train.py --data_path=$PATH1 --summary_path=$PATH2 --device_target=GPU &> log &
 cd ..

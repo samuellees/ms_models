@@ -14,8 +14,8 @@
 # limitations under the License.
 # ============================================================================
 
-PATH1="../datasets/cifar-10-batches-bin"
-PATH2="./train.bak/checkpoint_inceptionv3-55_280.ckpt"
+PATH1="../../datasets"
+PATH2="./train/checkpoint"
 
 get_real_path(){
   if [ "${1:0:1}" == "/" ]; then
@@ -28,33 +28,27 @@ get_real_path(){
 PATH1=$(get_real_path $PATH1)
 PATH2=$(get_real_path $PATH2)
 
-
-if [ ! -d $PATH1 ]
+if [ ! -d "$PATH1" ]
 then 
     echo "error: DATASET_PATH=$PATH1 is not a directory"
 exit 1
 fi 
 
-if [ ! -f $PATH2 ]
-then 
-    echo "error: CHECKPOINT_PATH=$PATH2 is not a file"
-exit 1
-fi 
-
 export DEVICE_NUM=1
-export DEVICE_ID=3
-export RANK_SIZE=$DEVICE_NUM
+export DEVICE_ID=0
 export RANK_ID=0
 
-if [ -d "infer" ];
+# mkdir ./train and enter ./train
+if [ -d "train" ];
 then
-    rm -rf ./infer
+    rm -rf ./train
 fi
-mkdir ./infer
-cp -r src ./infer
-cp *.py ./infer
-cd ./infer || exit
-echo "start infering for device $DEVICE_ID"
-python eval.py --data_path=$PATH1 --ckpt_path=$PATH2 --device_target=GPU
-# python eval.py --data_path=$PATH1 --ckpt_path=$PATH2 --device_target=GPU &> log &
+mkdir ./train
+cp *.py ./train
+cd ./train || exit
+mkdir $PATH2
+
+echo "start training for device $DEVICE_ID"
+python train.py --data_path=$PATH1 --ckpt_path=$PATH2 
+# python train.py --data_path=$PATH1 --ckpt_path=$PATH2 >log 2>&1 &
 cd ..

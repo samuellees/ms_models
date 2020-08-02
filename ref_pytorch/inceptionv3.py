@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.jit.annotations import Optional
 from torch import Tensor
-from .utils import load_state_dict_from_url
+# from .utils import load_state_dict_from_url
 
 
 __all__ = ['Inception3', 'inception_v3', 'InceptionOutputs', '_InceptionOutputs']
@@ -38,23 +38,23 @@ def inception_v3(pretrained=False, progress=True, **kwargs):
         transform_input (bool): If True, preprocesses the input according to the method with which it
             was trained on ImageNet. Default: *False*
     """
-    if pretrained:
-        if 'transform_input' not in kwargs:
-            kwargs['transform_input'] = True
-        if 'aux_logits' in kwargs:
-            original_aux_logits = kwargs['aux_logits']
-            kwargs['aux_logits'] = True
-        else:
-            original_aux_logits = True
-        kwargs['init_weights'] = False  # we are loading weights from a pretrained model
-        model = Inception3(**kwargs)
-        state_dict = load_state_dict_from_url(model_urls['inception_v3_google'],
-                                              progress=progress)
-        model.load_state_dict(state_dict)
-        if not original_aux_logits:
-            model.aux_logits = False
-            del model.AuxLogits
-        return model
+    # if pretrained:
+    #     if 'transform_input' not in kwargs:
+    #         kwargs['transform_input'] = True
+    #     if 'aux_logits' in kwargs:
+    #         original_aux_logits = kwargs['aux_logits']
+    #         kwargs['aux_logits'] = True
+    #     else:
+    #         original_aux_logits = True
+    #     kwargs['init_weights'] = False  # we are loading weights from a pretrained model
+    #     model = Inception3(**kwargs)
+    #     state_dict = load_state_dict_from_url(model_urls['inception_v3_google'],
+    #                                           progress=progress)
+    #     model.load_state_dict(state_dict)
+    #     if not original_aux_logits:
+    #         model.aux_logits = False
+    #         del model.AuxLogits
+    #     return model
 
     return Inception3(**kwargs)
 
@@ -434,3 +434,27 @@ class BasicConv2d(nn.Module):
         x = self.conv(x)
         x = self.bn(x)
         return F.relu(x, inplace=True)
+
+
+def linear_combination(x, y, epsilon): 
+    return epsilon*x + (1-epsilon)*y
+
+
+def reduce_loss(loss, reduction='mean'):
+    return loss.mean() if reduction=='mean' else loss.sum() if reduction=='sum' else loss
+
+
+class LabelSmoothingCrossEntropy(nn.Module):
+    def __init__(self, epsilon:float=0.1, reduction='mean'):
+        super().__init__()
+        self.epsilon = epsilon
+        self.reduction = reduction
+    
+    def forward(self, outputs, labels):
+        num_classes = outputs.size()[-1]
+        log_outputs = F.log_softmax(outputs, dim=-1)
+        labels = F.one_hot(labels, num_classes)
+        labels = (1-self.epsilon)*labels + self.epsilon/num_classes
+        loss = -log_outputs * labels
+        loss = reduce_loss(loss.sum(dim=-1), self.reduction)
+        return loss

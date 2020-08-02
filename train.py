@@ -25,6 +25,8 @@ from src.inceptionv3 import Inceptionv3
 import mindspore.nn as nn
 from mindspore import context
 from mindspore.train.callback import ModelCheckpoint, CheckpointConfig, LossMonitor, TimeMonitor
+from mindspore.train.callback import SummaryCollector
+# from mindspore.summary.summary_record import SummaryRecord
 from mindspore.train import Model
 from mindspore.nn.metrics import Accuracy
 from mindspore.nn.dynamic_lr import exponential_decay_lr
@@ -36,6 +38,8 @@ if __name__ == "__main__":
                         help='device where the code will be implemented (default: Ascend)')
     parser.add_argument('--data_path', type=str, default="./Data",
                         help='path where the dataset is saved')
+    parser.add_argument('--summary_path', type=str, default="./summary",
+                        help='path where the summary to be saved')
     parser.add_argument('--dataset_sink_mode', type=bool, default=True, help='dataset_sink_mode is False or True')
     args = parser.parse_args()
 
@@ -60,8 +64,12 @@ if __name__ == "__main__":
     config_ck = CheckpointConfig(save_checkpoint_steps=cfg.save_checkpoint_steps,
                                  keep_checkpoint_max=cfg.keep_checkpoint_max)
     ckpoint_cb = ModelCheckpoint(prefix="checkpoint_inceptionv3", config=config_ck)
+    summary_cb = SummaryCollector(args.summary_path,
+                                collect_freq=1,
+                                keep_default_action=False,
+                                collect_specified_data={'collect_graph': True})
     model = Model(network, net_loss, net_opt, metrics={"Accuracy": Accuracy()})
 
     print("============== Starting Training ==============")
-    model.train(cfg['epoch_size'], ds_train, callbacks=[time_cb, ckpoint_cb, LossMonitor()],
+    model.train(cfg['epoch_size'], ds_train, callbacks=[time_cb, ckpoint_cb, LossMonitor(), summary_cb],
                 dataset_sink_mode=args.dataset_sink_mode)

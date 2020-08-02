@@ -19,7 +19,6 @@ network config setting, will be used in train.py
 from easydict import EasyDict as edict
 
 inceptionv3_cfg = edict({
-    'num_classes': 10,
     'lr_init': 0.0045,
     'lr_decay_rate': 0.94,
     'lr_decay_epoch': 2,
@@ -27,11 +26,14 @@ inceptionv3_cfg = edict({
     'rmsprop_momentum': 0.9,
     'rmsprop_epsilon': 1.0,
     'label_smoothing_eps': 0.1,
-    'epoch_size': 1,
+    'epoch_size': 100,
+    # 'epoch_size': 1,
     'batch_size': 32,
     'buffer_size': 1000,
+    'keep_checkpoint_max': 10,
+    'save_checkpoint_steps': 1562,
+
+    'num_classes': 10,
     'image_height': 299,
     'image_width': 299,
-    'save_checkpoint_steps': 1562,
-    'keep_checkpoint_max': 10,
 })

@@ -14,8 +14,8 @@
 # limitations under the License.
 # ============================================================================
 
-PATH1="../datasets/cifar-10-batches-bin"
-PATH2="./train.bak/checkpoint_inceptionv3-55_280.ckpt"
+PATH1="../../datasets"
+PATH2="./train/checkpoint/checkpoint_inceptionv3_45-1272.ckpt"
 
 get_real_path(){
   if [ "${1:0:1}" == "/" ]; then
@@ -42,7 +42,7 @@ exit 1
 fi 
 
 export DEVICE_NUM=1
-export DEVICE_ID=3
+export DEVICE_ID=1
 export RANK_SIZE=$DEVICE_NUM
 export RANK_ID=0
 
@@ -51,10 +51,9 @@ then
     rm -rf ./infer
 fi
 mkdir ./infer
-cp -r src ./infer
 cp *.py ./infer
 cd ./infer || exit
 echo "start infering for device $DEVICE_ID"
-python eval.py --data_path=$PATH1 --ckpt_path=$PATH2 --device_target=GPU
-# python eval.py --data_path=$PATH1 --ckpt_path=$PATH2 --device_target=GPU &> log &
+python eval.py --data_path=$PATH1 --ckpt_path=$PATH2
+# python eval.py --data_path=$PATH1 --ckpt_path=$PATH2 >log 2>&1 &
 cd ..

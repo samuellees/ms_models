@@ -37,7 +37,7 @@ if __name__ == "__main__":
   scheduler = optim.lr_scheduler.StepLR(
                             optimizer, 
                             gamma=cfg.lr_decay_rate, 
-                            step_size=cfg.lr_decay_epoch)
+                            step_size=cfg.lr_decay_epoch*step_per_epoch)
   # scheduler = optim.lr_scheduler.ExponentialLR(
   #                             optimizer, 
   #                             gamma=cfg.lr_decay_rate)

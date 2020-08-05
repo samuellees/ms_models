@@ -15,7 +15,7 @@
 # ============================================================================
 
 PATH_DATA="../../datasets/cifar-10-batches-bin"
-PATH_CKPT="./train/checkpoint/squeezenet1.0-200_1875.ckpt"
+PATH_CKPT="./train/checkpoint/squeezenet1.0-100_1875.ckpt"
 
 get_real_path(){
   if [ "${1:0:1}" == "/" ]; then
@@ -55,6 +55,6 @@ cp -r src ./infer
 cp *.py ./infer
 cd ./infer || exit
 echo "start infering for device $DEVICE_ID"
-# python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID --device_target=GPU
-python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID --device_target=GPU &> log &
+python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID --device_target=GPU
+# python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID --device_target=GPU &> log &
 cd ..

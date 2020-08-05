@@ -15,7 +15,7 @@
 # ============================================================================
 
 PATH_DATA="../../../datasets"
-PATH_CKPT="./train/checkpoint/squeezenet1.0_200-1562.ckpt"
+PATH_CKPT="./train/checkpoint/squeezenet1.0_100-1562.ckpt"
 
 get_real_path(){
   if [ "${1:0:1}" == "/" ]; then
@@ -54,6 +54,6 @@ mkdir ./infer
 cp *.py ./infer
 cd ./infer || exit
 echo "start infering for device $DEVICE_ID"
-# python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID
-python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID  &> log &
+python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID
+# python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID  &> log &
 cd ..

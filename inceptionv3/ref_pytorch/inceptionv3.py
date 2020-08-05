@@ -436,10 +436,6 @@ class BasicConv2d(nn.Module):
         return F.relu(x, inplace=True)
 
 
-def linear_combination(x, y, epsilon): 
-    return epsilon*x + (1-epsilon)*y
-
-
 def reduce_loss(loss, reduction='mean'):
     return loss.mean() if reduction=='mean' else loss.sum() if reduction=='sum' else loss
 

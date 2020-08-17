@@ -30,7 +30,7 @@ class Inceptionv3(nn.Cell):
         # N x 32 x 149 x 149
         self.Conv2d_2a_3x3 = Conv2dBlock(in_channels=32, out_channels=32, kernel_size=3, pad_mode="valid")
         # N x 32 x 147 x 147
-        self.Conv2d_2b_3x3 = Conv2dBlock(in_channels=32, out_channels=64, kernel_size=3, pad_mode="valid")
+        self.Conv2d_2b_3x3 = Conv2dBlock(in_channels=32, out_channels=64, kernel_size=3, pad_mode="same")
         # N x 64 x 147 x 147
         self.MaxPool_3a_3x3 = nn.MaxPool2d(kernel_size=3, stride=2, pad_mode="valid")
         # N x 64 x 73 x 73
@@ -72,8 +72,10 @@ class Inceptionv3(nn.Cell):
         self.Conv2d_last = Conv2dBlock(in_channels=2048, out_channels=num_classes, 
                                 kernel_size=1, with_relu=False, with_bn=False)
         # N x num_classes x 1 x 1
+        self.fc = nn.Dense(in_channels=2048, out_channels=num_classes)
         self.flatten = nn.Flatten()
         # N x num_classes
+
 
     def construct(self, x):
         # N x 3 x 299 x 299
@@ -122,13 +124,18 @@ class Inceptionv3(nn.Cell):
         # N x 2048 x 1 x 1
         x = self.Dropout_last(x)
         # N x 2048 x 1 x 1
-        x = self.Conv2d_last(x)
-        # N x num_classes x 1 x 1
+
         x = self.flatten(x)
+        # N x 2048
+        x = self.fc(x)
+        # N x num_classes
+
+        # x = self.Conv2d_last(x)
+        # N x num_classes x 1 x 1
+        # x = self.flatten(x)
         # N x num_classes
         # if self.create_aux_logits:
         #     return x, aux
-        # else:
         return x
 
 class InceptionBlockA(nn.Cell):
@@ -254,7 +261,6 @@ class InceptionBlockAux(nn.Cell):
         super(InceptionBlockAux, self).__init__()
         self.pool = nn.AvgPool2d(kernel_size=5, stride=3, pad_mode='valid')
         self.conv_1 = Conv2dBlock(in_channels, out_channels=128, kernel_size=1)
-        # ksize = auto_kernel_size_for_small_input(x, [5, 5])
         # self.conv_2 = Conv2dBlock(in_channels=128, out_channels=768, kernel_size=ksize, pad_mode="valid", weight_init=TruncatedNormal(0.01))
         self.conv_2 = nn.SequentialCell([
                         Conv2dBlock(in_channels=128, out_channels=768, kernel_size=1, weight_init=TruncatedNormal(0.01)),
@@ -305,14 +311,3 @@ class Conv2dBlock(nn.Cell):
         if self.with_relu:
             x = self.relu(x)
         return x
-
-# def auto_kernel_size_for_small_input(input, kernel_size):
-#   """Define kernel size which is automatically reduced for small input.
-#   Args:
-#     input: input tensor of size [batch_size, channels, height, width].
-#     kernel_size: desired kernel size of length 2: [kernel_height, kernel_width]
-#   Returns:
-#     a tensor with the kernel size.
-#   """
-#   shape = input.shape
-#   return (P.Minimum(shape[1], kernel_size[0]), P.Minimum(shape[2], kernel_size[1]))

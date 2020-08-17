@@ -15,7 +15,7 @@
 # ============================================================================
 
 PATH1="../../../datasets"
-PATH2="./train/checkpoint/checkpoint_inceptionv3_100-1562.ckpt"
+PATH2="./train/checkpoint/checkpoint_inceptionv3_200-1562.ckpt"
 
 get_real_path(){
   if [ "${1:0:1}" == "/" ]; then

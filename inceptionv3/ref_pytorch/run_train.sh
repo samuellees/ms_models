@@ -14,7 +14,7 @@
 # limitations under the License.
 # ============================================================================
 
-PATH1="../../datasets"
+PATH1="../../../datasets"
 PATH2="./train/checkpoint"
 
 get_real_path(){
@@ -35,7 +35,7 @@ exit 1
 fi 
 
 export DEVICE_NUM=1
-export DEVICE_ID=0
+export DEVICE_ID=2
 export RANK_ID=0
 
 # mkdir ./train and enter ./train
@@ -49,6 +49,6 @@ cd ./train || exit
 mkdir $PATH2
 
 echo "start training for device $DEVICE_ID"
-python train.py --data_path=$PATH1 --ckpt_path=$PATH2 
-# python train.py --data_path=$PATH1 --ckpt_path=$PATH2 >log 2>&1 &
+# python train.py --data_path=$PATH1 --ckpt_path=$PATH2   --device_id=$DEVICE_ID
+python train.py --data_path=$PATH1 --ckpt_path=$PATH2  --device_id=$DEVICE_ID >log 2>&1 &
 cd ..

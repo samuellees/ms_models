@@ -14,7 +14,7 @@
 # limitations under the License.
 # ============================================================================
 
-PATH1="../datasets/cifar-10-batches-bin"
+PATH1="../../../datasets/cifar-10-batches-bin"
 PATH2="./train/summary"
 
 get_real_path(){
@@ -50,6 +50,6 @@ cd ./train || exit
 mkdir $PATH2
 
 echo "start training for device $DEVICE_ID"
-python train.py --data_path=$PATH1 --summary_path=$PATH2 --device_target=GPU
-# python train.py --data_path=$PATH1 --summary_path=$PATH2 --device_target=GPU &> log &
+# python train.py --data_path=$PATH1 --summary_path=$PATH2 --device_id=$DEVICE_ID --device_target=GPU
+python train.py --data_path=$PATH1 --summary_path=$PATH2 --device_id=$DEVICE_ID --device_target=GPU &> log &
 cd ..

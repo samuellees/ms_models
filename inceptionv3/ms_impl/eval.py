@@ -38,12 +38,13 @@ if __name__ == "__main__":
     parser.add_argument('--ckpt_path', type=str, default="./ckpt", help='if is test, must provide\
                         path where the trained ckpt file')
     parser.add_argument('--dataset_sink_mode', type=bool, default=True, help='dataset_sink_mode is False or True')
+    parser.add_argument('--device_id', type=int, default=0, help='device id of GPU. (Default: 0)')
     args = parser.parse_args()
 
     if args.device_target == "CPU":
         args.dataset_sink_mode = False
 
-    context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target)
+    context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target, device_id=args.device_id)
 
     network = Inceptionv3(cfg.num_classes)
     net_loss = nn.SoftmaxCrossEntropyWithLogits(is_grad=False, sparse=True, 

@@ -41,12 +41,13 @@ if __name__ == "__main__":
     parser.add_argument('--summary_path', type=str, default="./summary",
                         help='path where the summary to be saved')
     parser.add_argument('--dataset_sink_mode', type=bool, default=True, help='dataset_sink_mode is False or True')
+    parser.add_argument('--device_id', type=int, default=0, help='device id of GPU. (Default: 0)')
     args = parser.parse_args()
 
     if args.device_target == "CPU":
         args.dataset_sink_mode = False
 
-    context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target)
+    context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target, device_id=args.device_id)
 
     network = Inceptionv3(cfg.num_classes)
     net_loss = nn.SoftmaxCrossEntropyWithLogits(is_grad=False, sparse=True, 
@@ -64,12 +65,14 @@ if __name__ == "__main__":
     config_ck = CheckpointConfig(save_checkpoint_steps=cfg.save_checkpoint_steps,
                                  keep_checkpoint_max=cfg.keep_checkpoint_max)
     ckpoint_cb = ModelCheckpoint(prefix="checkpoint_inceptionv3", config=config_ck)
-    summary_cb = SummaryCollector(args.summary_path,
-                                collect_freq=1,
-                                keep_default_action=False,
-                                collect_specified_data={'collect_graph': True})
+    # summary_cb = SummaryCollector(args.summary_path,
+    #                             collect_freq=1,
+    #                             keep_default_action=False,
+    #                             collect_specified_data={'collect_graph': True})
     model = Model(network, net_loss, net_opt, metrics={"Accuracy": Accuracy()})
 
     print("============== Starting Training ==============")
-    model.train(cfg['epoch_size'], ds_train, callbacks=[time_cb, ckpoint_cb, LossMonitor(), summary_cb],
+    # model.train(cfg['epoch_size'], ds_train, callbacks=[time_cb, ckpoint_cb, LossMonitor(), summary_cb],
+    #             dataset_sink_mode=args.dataset_sink_mode)
+    model.train(cfg['epoch_size'], ds_train, callbacks=[time_cb, ckpoint_cb, LossMonitor()],
                 dataset_sink_mode=args.dataset_sink_mode)

@@ -16,9 +16,10 @@ if __name__ == "__main__":
                       help='path where the dataset is saved')
   parser.add_argument('--ckpt_path', type=str, default="./checkpoint",
                       help='path where the checkpoint to be saved')
+  parser.add_argument('--device_id', type=int, default=0, help='device id of GPU. (Default: 0)')
   args = parser.parse_args()
 
-  device = torch.device('cuda:1')
+  device = torch.device('cuda:'+str(args.device_id))
   network = torch.load(args.ckpt_path)
   network.to(device)
 

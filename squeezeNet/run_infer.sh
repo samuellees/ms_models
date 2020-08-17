@@ -14,8 +14,8 @@
 # limitations under the License.
 # ============================================================================
 
-PATH_DATA="../../datasets/cifar-10-batches-bin"
-PATH_CKPT="./train/checkpoint/squeezenet1.0-100_1875.ckpt"
+PATH_DATA="../../datasets/cifar-10-verify-bin"
+PATH_CKPT="./train/checkpoint/squeezenet1.0-500_1562.ckpt"
 
 get_real_path(){
   if [ "${1:0:1}" == "/" ]; then

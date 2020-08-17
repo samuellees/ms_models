@@ -26,7 +26,7 @@ inceptionv3_cfg = edict({
     'rmsprop_momentum': 0.9,
     'rmsprop_epsilon': 1.0,
     'label_smoothing_eps': 0.1,
-    'epoch_size': 100,
+    'epoch_size': 200,
     # 'epoch_size': 1,
     'batch_size': 32,
     'buffer_size': 1000,

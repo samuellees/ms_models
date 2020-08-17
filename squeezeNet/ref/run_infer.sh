@@ -15,7 +15,7 @@
 # ============================================================================
 
 PATH_DATA="../../../datasets"
-PATH_CKPT="./train/checkpoint/squeezenet1.0_100-1562.ckpt"
+PATH_CKPT="./train/checkpoint/squeezenet1.0_500-1562.ckpt"
 
 get_real_path(){
   if [ "${1:0:1}" == "/" ]; then

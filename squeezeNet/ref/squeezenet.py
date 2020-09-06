@@ -8,18 +8,30 @@ __all__ = ['SqueezeNet', 'LabelSmoothingCrossEntropy']
 def with_bias():
     return False
 
+class BasicConv2d(nn.Module):
+
+    def __init__(self, in_channels, out_channels, **kwargs):
+        super(BasicConv2d, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, **kwargs)
+        self.bn = nn.BatchNorm2d(out_channels, eps=0.001)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        return x
+
 class Fire(nn.Module):
 
     def __init__(self, inplanes, squeeze_planes,
                  expand1x1_planes, expand3x3_planes):
         super(Fire, self).__init__()
         self.inplanes = inplanes
-        self.squeeze = nn.Conv2d(inplanes, squeeze_planes, kernel_size=1, bias=with_bias())
+        self.squeeze = BasicConv2d(inplanes, squeeze_planes, kernel_size=1, bias=with_bias())
         self.squeeze_activation = nn.ReLU(inplace=True)
-        self.expand1x1 = nn.Conv2d(squeeze_planes, expand1x1_planes,
+        self.expand1x1 = BasicConv2d(squeeze_planes, expand1x1_planes,
                                    kernel_size=1, bias=with_bias())
         self.expand1x1_activation = nn.ReLU(inplace=True)
-        self.expand3x3 = nn.Conv2d(squeeze_planes, expand3x3_planes,
+        self.expand3x3 = BasicConv2d(squeeze_planes, expand3x3_planes,
                                    kernel_size=3, padding=1, bias=with_bias())
         self.expand3x3_activation = nn.ReLU(inplace=True)
 
@@ -38,7 +50,7 @@ class SqueezeNet(nn.Module):
         self.num_classes = num_classes
         if version == '1.0':
             self.features = nn.Sequential(
-                nn.Conv2d(3, 96, kernel_size=7, stride=2, bias=with_bias()),
+                BasicConv2d(3, 96, kernel_size=7, stride=2, bias=with_bias()),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=False),
                 # (32, 256, 54, 54)
@@ -55,22 +67,22 @@ class SqueezeNet(nn.Module):
                 Fire(512, 64, 256, 256)
                 # (32, 256, 13, 13)
             )
-        elif version == '1.1':
-            self.features = nn.Sequential(
-                nn.Conv2d(3, 64, kernel_size=3, stride=2, bias=with_bias()),
-                nn.ReLU(inplace=True),
-                nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=False),
-                Fire(64, 16, 64, 64),
-                Fire(128, 16, 64, 64),
-                nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=False),
-                Fire(128, 32, 128, 128),
-                Fire(256, 32, 128, 128),
-                nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=False),
-                Fire(256, 48, 192, 192),
-                Fire(384, 48, 192, 192),
-                Fire(384, 64, 256, 256),
-                Fire(512, 64, 256, 256)
-            )
+        # elif version == '1.1':
+        #     self.features = nn.Sequential(
+        #         nn.Conv2d(3, 64, kernel_size=3, stride=2, bias=with_bias()),
+        #         nn.ReLU(inplace=True),
+        #         nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=False),
+        #         Fire(64, 16, 64, 64),
+        #         Fire(128, 16, 64, 64),
+        #         nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=False),
+        #         Fire(128, 32, 128, 128),
+        #         Fire(256, 32, 128, 128),
+        #         nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=False),
+        #         Fire(256, 48, 192, 192),
+        #         Fire(384, 48, 192, 192),
+        #         Fire(384, 64, 256, 256),
+        #         Fire(512, 64, 256, 256)
+        #     )
         else:
             # FIXME: Is this needed? SqueezeNet should only be called from the
             # FIXME: squeezenet1_x() functions
@@ -79,7 +91,7 @@ class SqueezeNet(nn.Module):
                              "1.0 or 1.1 expected".format(version=version))
 
         # Final convolution is initialized differently from the rest
-        final_conv = nn.Conv2d(512, self.num_classes, kernel_size=1, bias=with_bias())
+        final_conv = BasicConv2d(512, self.num_classes, kernel_size=1, bias=with_bias())
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
             final_conv,
@@ -88,13 +100,13 @@ class SqueezeNet(nn.Module):
         )
 
         for m in self.modules():
-            if isinstance(m, nn.Conv2d):
+            if isinstance(m, BasicConv2d):
                 if m is final_conv:
-                    init.normal_(m.weight, mean=0.0, std=0.01)
+                    init.normal_(m.conv.weight, mean=0.0, std=0.01)
                 else:
-                    init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    init.constant_(m.bias, 0)
+                    init.xavier_uniform_(m.conv.weight)
+                if m.conv.bias is not None:
+                    init.constant_(m.conv.bias, 0)
 
     def forward(self, x):
         x = self.features(x)

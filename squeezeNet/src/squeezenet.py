@@ -110,7 +110,7 @@ class Conv2dBlock(nn.Cell):
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, 
                 pad_mode="same", padding=0, weight_init="XavierUniform", 
                 with_relu=True, 
-                with_bn=False):
+                with_bn=True):
         super(Conv2dBlock, self).__init__()
         self.with_bn = with_bn
         self.with_relu = with_relu

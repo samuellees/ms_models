@@ -25,11 +25,13 @@ if __name__ == "__main__":
     network = Xception(num_classes=cfg.num_classes)
     network.to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.RMSprop(network.parameters(), 
-                                lr=cfg.lr_init, 
-                                eps=cfg.rmsprop_epsilon,
-                                momentum=cfg.rmsprop_momentum, 
-                                alpha=cfg.rmsprop_decay)
+#     optimizer = optim.RMSprop(network.parameters(), 
+#                                 lr=cfg.lr_init, 
+#                                 eps=cfg.rmsprop_epsilon,
+#                                 momentum=cfg.rmsprop_momentum, 
+#                                 alpha=cfg.rmsprop_decay)
+    
+    optimizer = optim.SGD(network.parameters(), lr=cfg.lr_init, momentum=cfg.SGD_momentum)
     dataloader = create_dataset_pytorch(args.data_path, is_train=True)
     step_per_epoch = len(dataloader)
     scheduler = optim.lr_scheduler.StepLR(
@@ -50,9 +52,9 @@ if __name__ == "__main__":
             # zeros the parameter gradients
             optimizer.zero_grad()
             outputs = network(inputs)
-            loss = criterion(outputs, labels) 
-            loss.backward()     
-            optimizer.step()    
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
             scheduler.step()  
             # print statistics
             running_loss = loss.item()
@@ -70,7 +72,7 @@ if __name__ == "__main__":
                 if q_ckpt.full():
                     last_file = q_ckpt.get()
                     os.remove(last_file)
-                ckpt_file = ('%s/checkpoint_inceptionv3_%d-%d.ckpt' % 
+                ckpt_file = ('%s/%d-%d.ckpt' % 
                             (args.ckpt_path, epoch + 1, i + 1))
                 q_ckpt.put(ckpt_file)
                 torch.save(network, ckpt_file)

@@ -17,10 +17,12 @@
 PATH_DATA="/userhome/datasets"
 PATH_MODEL="/userhome/ms_models/xception_pytorch"
 
-PATH_TRAIN=$PATH_MODEL:"/train"
-PATH_INFER=$PATH_MODEL:"/infer"
+PATH_TRAIN=$PATH_MODEL"/train"
+PATH_INFER=$PATH_MODEL"/infer"
 
-PATH_CKPT=$PATH_TRAIN:"/checkpoint"
+PATH_CKPT=$PATH_TRAIN"/checkpoint"
+
+PYTHON_EXE="/userhome/software/anaconda3/envs/mindspore-0.7/bin/python"
 
 export DEVICE_ID=0
 
@@ -29,11 +31,13 @@ if [ -d $PATH_TRAIN ];
 then
     rm -rf $PATH_TRAIN
 fi
+cd $PATH_MODEL
 mkdir $PATH_TRAIN
 cp *.py $PATH_TRAIN
 cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 
 echo "start training for device $DEVICE_ID"
-python train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
+# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
+$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
 cd ..

@@ -17,10 +17,12 @@
 PATH_DATA="/userhome/datasets"
 PATH_MODEL="/userhome/ms_models/xception_pytorch"
 
-PATH_TRAIN=$PATH_MODEL:"/train"
-PATH_INFER=$PATH_MODEL:"/infer"
+PATH_TRAIN=$PATH_MODEL"/train"
+PATH_INFER=$PATH_MODEL"/infer"
 
-PATH_CKPT=$PATH_TRAIN:"/checkpoint/squeezenet1.0_200-1562.ckpt"
+PATH_CKPT=$PATH_TRAIN"/checkpoint/50-1562.ckpt"
+
+PYTHON_EXE="/userhome/software/anaconda3/envs/mindspore-0.7/bin/python"
 
 export DEVICE_ID=0
 
@@ -28,9 +30,10 @@ if [ -d $PATH_INFER ];
 then
     rm -rf $PATH_INFER
 fi
+cd $PATH_MODEL
 mkdir $PATH_INFER
 cp *.py $PATH_INFER
 cd $PATH_INFER || exit
 echo "start infering for device $DEVICE_ID"
-python eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID
+$PYTHON_EXE eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID
 cd ..

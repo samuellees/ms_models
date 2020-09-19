@@ -14,17 +14,17 @@
 # limitations under the License.
 # ============================================================================
 
-PATH_DATA="/userhome/datasets"
-PATH_MODEL="/userhome/ms_models/xception_pytorch"
+PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets"
+PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
 
 PATH_CKPT=$PATH_TRAIN"/checkpoint/50-1562.ckpt"
 
-PYTHON_EXE="/userhome/software/anaconda3/envs/mindspore-0.7/bin/python"
+PYTHON_EXE="python"
 
-export DEVICE_ID=0
+export DEVICE_ID=1
 
 if [ -d $PATH_INFER ];
 then

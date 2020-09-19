@@ -22,7 +22,7 @@ if __name__ == "__main__":
     network = torch.load(args.ckpt_path)
     network.to(device)
 
-    dataloader = create_dataset_pytorch(args.data_path, is_train=True)
+    dataloader = create_dataset_pytorch(args.data_path, is_train=False)
     with torch.no_grad():
         total_samples = 0.0
         correct_samples = 0.0

@@ -14,29 +14,26 @@
 # limitations under the License.
 # ============================================================================
 
-PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012"
-PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch"
+PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets"
+PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
 
-PATH_CKPT=$PATH_TRAIN"/checkpoint"
+PATH_CKPT=$PATH_TRAIN"/checkpoint/50-1562.ckpt"
 
 PYTHON_EXE="python"
 
-export DEVICE_ID=0
+export DEVICE_ID=1
 
-if [ -d $PATH_TRAIN ];
+if [ -d $PATH_INFER ];
 then
-    rm -rf $PATH_TRAIN
+    rm -rf $PATH_INFER
 fi
 cd $PATH_MODEL
-mkdir $PATH_TRAIN
-cp *.py $PATH_TRAIN
-cd $PATH_TRAIN || exit
-mkdir $PATH_CKPT
-
-echo "start training for device $DEVICE_ID"
-$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
-# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
+mkdir $PATH_INFER
+cp *.py $PATH_INFER
+cd $PATH_INFER || exit
+echo "start infering for device $DEVICE_ID"
+$PYTHON_EXE eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID
 cd ..

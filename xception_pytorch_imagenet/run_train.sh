@@ -15,7 +15,7 @@
 # ============================================================================
 
 PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012"
-PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch"
+PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"

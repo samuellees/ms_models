@@ -68,7 +68,7 @@ if __name__ == "__main__":
             
             # save checkpoint every epoch
             global_step_id = global_step_id + 1
-            if global_step_id % cfg.save_checkpoint_steps == 0:
+            if global_step_id % step_per_epoch == 0:
                 if q_ckpt.full():
                     last_file = q_ckpt.get()
                     os.remove(last_file)

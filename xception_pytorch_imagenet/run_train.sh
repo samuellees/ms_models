@@ -14,15 +14,19 @@
 # limitations under the License.
 # ============================================================================
 
-PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012"
-PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
+# PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012"
+# PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
+
+# PATH_DATA="/userhome/datasets/ImageNet2012/mnt"
+PATH_DATA="/gdata/ImageNet2012"
+PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
 
 PATH_CKPT=$PATH_TRAIN"/checkpoint"
 
-PYTHON_EXE="python"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
 
 export DEVICE_ID=0
 
@@ -37,6 +41,6 @@ cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 
 echo "start training for device $DEVICE_ID"
-$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
-# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
+# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
+$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
 cd ..

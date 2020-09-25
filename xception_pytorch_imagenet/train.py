@@ -8,7 +8,8 @@ import os
 from queue import Queue
 
 from config import cfg
-from dataset import create_dataset_pytorch
+from dali_pipeline import HybridTrainPipe
+# from dataset import create_dataset_pytorch
 from xception import Xception
 
 if __name__ == "__main__":
@@ -21,9 +22,11 @@ if __name__ == "__main__":
                         help='device id of GPU. (Default: 0)')
     args = parser.parse_args()
 
-    device = torch.device('cuda:'+str(args.device_id))
+    # device = torch.device('cuda:'+str(args.device_id))
     network = Xception(num_classes=cfg.num_classes)
-    network.to(device)
+    network = nn.DataParallel(network)
+    # network.to(device)
+    network = network.cuda()
     criterion = nn.CrossEntropyLoss()
 #     optimizer = optim.RMSprop(network.parameters(), 
 #                                 lr=cfg.lr_init, 
@@ -47,8 +50,10 @@ if __name__ == "__main__":
         for i, data in enumerate(dataloader, 0):
             time_start = time.time()
             inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+            # inputs = inputs.to(device)
+            # labels = labels.to(device)
+            inputs = inputs.cuda()
+            labels = labels.cuda()
             # zeros the parameter gradients
             optimizer.zero_grad()
             outputs = network(inputs)

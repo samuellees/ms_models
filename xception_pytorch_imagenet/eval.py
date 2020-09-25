@@ -19,7 +19,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     device = torch.device('cuda:'+str(args.device_id))
+#     network=nn.DataParallel(Xception(num_classes=cfg.num_classes))
     network = torch.load(args.ckpt_path)
+    network = network.module
     network.to(device)
 
     dataloader = create_dataset_pytorch(args.data_path + "/val")

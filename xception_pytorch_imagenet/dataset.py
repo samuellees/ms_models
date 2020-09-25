@@ -29,12 +29,12 @@ def create_dataset_pytorch_cifar10(data_path, is_train=True):
 
 def create_dataset_pytorch(data_path):
   transform = transforms.Compose([
-    transforms.Resize((cfg.image_height, cfg.image_width)),
+    transforms.Resize((cfg.image_size, cfg.image_size)),
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
 
-  dataset = torchvision.datasets.ImageFloder(root=data_path, transform=transform)
+  dataset = torchvision.datasets.ImageFolder(root=data_path, transform=transform)
   data_loader = DataLoader(dataset=dataset, 
-                          batch_size=cfg.batch_size, shuffle=True, drop_last=True, num_workers=4)
+                          batch_size=cfg.batch_size, shuffle=True, drop_last=True, num_workers=10)
 
   return data_loader

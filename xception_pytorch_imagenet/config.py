@@ -27,8 +27,9 @@ cfg = edict({
 #     'rmsprop_momentum': 0.9,
 #     'rmsprop_epsilon': 1.0,
 
-    'epoch_size': 100,
-    'batch_size_whole_world': 256,
+    'epoch_size': 1,
+    'n_workers': 12,
+    'batch_size': 16,
     'buffer_size': 1000,
     'keep_checkpoint_max': 100,
     'num_classes': 1000,

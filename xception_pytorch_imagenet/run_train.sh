@@ -18,7 +18,8 @@
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
 
 # PATH_DATA="/userhome/datasets/ImageNet2012/mnt"
-PATH_DATA="/gdata/ImageNet2012"
+# PATH_DATA="/gdata/ImageNet2012"
+PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
 PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet"
 
 PATH_TRAIN=$PATH_MODEL"/train"
@@ -27,8 +28,6 @@ PATH_INFER=$PATH_MODEL"/infer"
 PATH_CKPT=$PATH_TRAIN"/checkpoint"
 
 PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
-
-export DEVICE_ID=0
 
 if [ -d $PATH_TRAIN ];
 then
@@ -40,7 +39,7 @@ cp *.py $PATH_TRAIN
 cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 
-echo "start training for device $DEVICE_ID"
-# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
-$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
+echo "start training"
+$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT
+# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT > log.txt 2>&1 
 cd ..

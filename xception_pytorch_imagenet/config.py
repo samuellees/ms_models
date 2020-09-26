@@ -28,7 +28,8 @@ cfg = edict({
 #     'rmsprop_epsilon': 1.0,
 
     'epoch_size': 100,
-    'batch_size_whole_world': 256,
+    'n_workers': 8,
+    'batch_size': 256,
     'buffer_size': 1000,
     'keep_checkpoint_max': 100,
     'num_classes': 1000,

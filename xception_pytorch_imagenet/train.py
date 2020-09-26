@@ -9,7 +9,8 @@ from queue import Queue
 
 from config import cfg
 from dali_pipeline import HybridTrainPipe
-# from dataset import create_dataset_pytorch
+from nvidia.dali.plugin.pytorch import DALIClassificationIterator
+from dataset import create_dataset_pytorch
 from xception import Xception
 
 if __name__ == "__main__":
@@ -21,11 +22,11 @@ if __name__ == "__main__":
     parser.add_argument('--device_id', type=int, default=0,
                         help='device id of GPU. (Default: 0)')
     args = parser.parse_args()
+    args.local_rank = 0
+    args.world_size = 1
 
-    # device = torch.device('cuda:'+str(args.device_id))
     network = Xception(num_classes=cfg.num_classes)
-    network = nn.DataParallel(network)
-    # network.to(device)
+    # network = nn.DataParallel(network)
     network = network.cuda()
     criterion = nn.CrossEntropyLoss()
 #     optimizer = optim.RMSprop(network.parameters(), 
@@ -33,9 +34,20 @@ if __name__ == "__main__":
 #                                 eps=cfg.rmsprop_epsilon,
 #                                 momentum=cfg.rmsprop_momentum, 
 #                                 alpha=cfg.rmsprop_decay)
-    
     optimizer = optim.SGD(network.parameters(), lr=cfg.lr_init, momentum=cfg.SGD_momentum)
-    dataloader = create_dataset_pytorch(args.data_path + "/train")
+    # prepare data
+    # dataloader = create_dataset_pytorch(args.data_path + "/train")
+    pipe = HybridTrainPipe(batch_size=cfg.batch_size,
+                           num_threads=cfg.n_workers,
+                           device_id=args.local_rank,
+                           data_dir=args.data_path,
+                           crop=cfg.image_size,
+                           local_rank=args.local_rank,
+                           world_size=args.world_size)
+    pipe.build()
+    dataloader = DALIClassificationIterator(pipe, reader_name="Reader")
+    step_per_epoch = dataloader.size / cfg.batch_size
+    print("step_per_epoch =", step_per_epoch)
     step_per_epoch = len(dataloader)
     scheduler = optim.lr_scheduler.StepLR(
                                 optimizer, 
@@ -47,13 +59,13 @@ if __name__ == "__main__":
     for epoch in range(cfg.epoch_size):
         time_epoch = 0.0
         torch.cuda.synchronize()
-        for i, data in enumerate(dataloader, 0):
+        for i, data in enumerate(dataloader):
             time_start = time.time()
-            inputs, labels = data
-            # inputs = inputs.to(device)
-            # labels = labels.to(device)
-            inputs = inputs.cuda()
-            labels = labels.cuda()
+            # inputs, labels = data
+            # inputs = inputs.cuda()
+            # labels = labels.cuda()
+            inputs = data[0]["data"].cuda(non_blocking=True)
+            labels = data[0]["label"].squeeze().long().cuda(non_blocking=True)
             # zeros the parameter gradients
             optimizer.zero_grad()
             outputs = network(inputs)

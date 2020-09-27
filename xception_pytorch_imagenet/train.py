@@ -48,7 +48,6 @@ if __name__ == "__main__":
     dataloader = DALIClassificationIterator(pipe, reader_name="Reader")
     step_per_epoch = dataloader.size / cfg.batch_size
     print("step_per_epoch =", step_per_epoch)
-    step_per_epoch = len(dataloader)
     scheduler = optim.lr_scheduler.StepLR(
                                 optimizer, 
                                 gamma=cfg.lr_decay_rate, 
@@ -93,7 +92,7 @@ if __name__ == "__main__":
                             (args.ckpt_path, epoch + 1, i + 1))
                 q_ckpt.put(ckpt_file)
                 torch.save(network, ckpt_file)
-            
+        dataloader.reset()
         print('Epoch time: %10.4f, per step time: %7.4f' %
             (time_epoch, time_epoch / step_per_epoch), flush=True)
 

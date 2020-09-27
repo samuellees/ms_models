@@ -17,8 +17,9 @@
 # PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012"
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
 
-# PATH_DATA="/userhome/datasets/ImageNet2012/mnt"
-PATH_DATA="/gdata/ImageNet2012"
+PATH_DATA="/dev/shm/ImageNet2012/train"
+# PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
+# PATH_DATA="/gdata/ImageNet2012"
 PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet"
 
 PATH_TRAIN=$PATH_MODEL"/train"
@@ -32,7 +33,7 @@ export DEVICE_ID=0
 
 if [ -d $PATH_TRAIN ];
 then
-    rm -rf $PATH_TRAIN
+    rm $PATH_TRAIN -rf
 fi
 cd $PATH_MODEL
 mkdir $PATH_TRAIN
@@ -41,6 +42,6 @@ cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 
 echo "start training for device $DEVICE_ID"
-$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
-# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
+# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
+$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
 cd ..

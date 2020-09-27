@@ -88,6 +88,7 @@ def main_worker(local_rank, args):
                     q_ckpt.put(ckpt_file)
                     torch.save(network, ckpt_file)
         # end loop data
+        dataloader.reset()
         if args.local_rank == 0:
             print('Epoch time: %10.4f, per step time: %7.4f' %
                   (time_epoch, time_epoch / step_per_epoch), flush=True)

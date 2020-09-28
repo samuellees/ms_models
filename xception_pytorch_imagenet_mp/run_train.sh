@@ -15,12 +15,12 @@
 # ============================================================================
 
 PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012/val"
-PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet_dist"
+PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet_mp"
 
-# PATH_DATA="/dev/shm/ImageNet2012/train"
+# PATH_DATA="/dev/shm/ImageNet2012/val"
 # PATH_DATA="/gdata/ImageNet2012"
 # PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
-# PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet_dist"
+# PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet_mp"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"

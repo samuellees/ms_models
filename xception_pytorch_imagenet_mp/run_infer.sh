@@ -14,33 +14,31 @@
 # limitations under the License.
 # ============================================================================
 
-PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012/val"
-PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet_dist"
+# PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012"
+# PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
 
-# PATH_DATA="/dev/shm/ImageNet2012/train"
+# PATH_DATA="/userhome/datasets/ImageNet2012/mnt"
+PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
 # PATH_DATA="/gdata/ImageNet2012"
-# PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
-# PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet_dist"
+PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
 
-PATH_CKPT=$PATH_TRAIN"/checkpoint"
+# PATH_CKPT=$PATH_TRAIN"/checkpoint/50-5004.ckpt"
+PATH_CKPT=$PATH_TRAIN"/checkpoint/1-2.ckpt"
 
-# PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
-PYTHON_EXE="python"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
 
-if [ -d $PATH_TRAIN ];
+if [ -d $PATH_INFER ];
 then
-    rm -rf $PATH_TRAIN
+    rm -rf $PATH_INFER
 fi
 cd $PATH_MODEL
-mkdir $PATH_TRAIN
-cp *.py $PATH_TRAIN
-cd $PATH_TRAIN || exit
-mkdir $PATH_CKPT
-
-echo "start training"
-$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT
-# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT > log.txt 2>&1 
+mkdir $PATH_INFER
+cp *.py $PATH_INFER
+cd $PATH_INFER || exit
+echo "start infering"
+$PYTHON_EXE eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT
+# $PYTHON_EXE eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID > log.txt 2>&1 
 cd ..

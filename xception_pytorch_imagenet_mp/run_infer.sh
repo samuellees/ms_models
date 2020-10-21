@@ -18,9 +18,9 @@
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
 
 # PATH_DATA="/userhome/datasets/ImageNet2012/mnt"
-PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
+# PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
 # PATH_DATA="/gdata/ImageNet2012"
-PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet"
+PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet_mp"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"

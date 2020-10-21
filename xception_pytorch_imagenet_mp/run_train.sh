@@ -14,21 +14,21 @@
 # limitations under the License.
 # ============================================================================
 
-PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012/val"
-PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet_mp"
+# PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012/train"
+# PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet_mp"
 
-# PATH_DATA="/dev/shm/ImageNet2012/val"
-# PATH_DATA="/gdata/ImageNet2012"
+PATH_DATA="/dev/shm/ImageNet2012/train"
+# PATH_DATA="/gdata/ImageNet2012/train"
 # PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
-# PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet_mp"
+PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet_mp"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
 
 PATH_CKPT=$PATH_TRAIN"/checkpoint"
 
-# PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
-PYTHON_EXE="python"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
+# PYTHON_EXE="python"
 
 if [ -d $PATH_TRAIN ];
 then

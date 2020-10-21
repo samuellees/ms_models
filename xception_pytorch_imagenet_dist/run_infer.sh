@@ -18,15 +18,15 @@
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet"
 
 # PATH_DATA="/userhome/datasets/ImageNet2012/mnt"
-PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
-# PATH_DATA="/gdata/ImageNet2012"
-PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet"
+# PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
+PATH_DATA="/gdata/ImageNet2012/val"
+PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet_dist"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
 
 # PATH_CKPT=$PATH_TRAIN"/checkpoint/50-5004.ckpt"
-PATH_CKPT=$PATH_TRAIN"/checkpoint/1-2.ckpt"
+PATH_CKPT=$PATH_TRAIN"/checkpoint/53-5004.ckpt"
 
 PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
 
@@ -39,6 +39,8 @@ mkdir $PATH_INFER
 cp *.py $PATH_INFER
 cd $PATH_INFER || exit
 echo "start infering"
+# ls $PATH_TRAIN"/checkpoint" | while read NAME; do \
+#     $PYTHON_EXE eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_TRAIN"/checkpoint/"${NAME} ; \
+# done
 $PYTHON_EXE eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT
-# $PYTHON_EXE eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID > log.txt 2>&1 
 cd ..

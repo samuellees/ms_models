@@ -14,29 +14,33 @@
 # limitations under the License.
 # ============================================================================
 
-# PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets"
-# PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10_mp"
+# PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/cifar-10-batches-py"
+# PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10"
 
-PATH_DATA="/userhome/datasets"
-PATH_MODEL="/userhome/ms_models/xception_pytorch_cifar10_mp"
+PATH_MODEL="/userhome/ms_models/xception_pytorch_cifar10_mp_amp"
+# PATH_DATA="/userhome/datasets"
+PATH_DATA="/dev/shm/dataset"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
 
-PATH_CKPT=$PATH_TRAIN"/checkpoint/100-1562.ckpt"
+PATH_CKPT=$PATH_TRAIN"/checkpoint"
 
 PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
 
 export DEVICE_ID=0
 
-if [ -d $PATH_INFER ];
+if [ -d $PATH_TRAIN ];
 then
-    rm -rf $PATH_INFER
+    rm -rf $PATH_TRAIN
 fi
 cd $PATH_MODEL
-mkdir $PATH_INFER
-cp *.py $PATH_INFER
-cd $PATH_INFER || exit
-echo "start infering for device $DEVICE_ID"
-$PYTHON_EXE eval.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT --device_id=$DEVICE_ID
+mkdir $PATH_TRAIN
+cp *.py $PATH_TRAIN
+cd $PATH_TRAIN || exit
+mkdir $PATH_CKPT
+
+echo "start training for device $DEVICE_ID"
+$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
+# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
 cd ..

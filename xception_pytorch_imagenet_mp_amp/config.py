@@ -29,7 +29,7 @@ cfg = edict({
 
     'epoch_size': 100,
     'n_workers': 4,
-    'batch_size': 64,
+    'batch_size': 128,
     'buffer_size': 1000,
     'keep_checkpoint_max': 100,
     'num_classes': 1000,

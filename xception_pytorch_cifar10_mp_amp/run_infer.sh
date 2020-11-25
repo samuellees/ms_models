@@ -18,7 +18,7 @@
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10_mp"
 
 PATH_DATA="/userhome/datasets"
-PATH_MODEL="/userhome/ms_models/xception_pytorch_cifar10_mp"
+PATH_MODEL="/userhome/ms_models/xception_pytorch_cifar10_mp_amp"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"

@@ -6,6 +6,7 @@ import torch.optim as optim
 import time
 import os
 from queue import Queue
+from torch.cuda.amp import autocast as autocast, GradScaler
 
 from config import cfg
 from dataset import create_dataset_pytorch_cifar10
@@ -40,10 +41,11 @@ if __name__ == "__main__":
                                 gamma=cfg.lr_decay_rate, 
                                 step_size=cfg.lr_decay_epoch*step_per_epoch)
     q_ckpt = Queue(maxsize=cfg.keep_checkpoint_max)
+    
+    scaler = GradScaler()
 
     global_step_id = 0
-#     for epoch in range(cfg.epoch_size):
-    for epoch in range(1):
+    for epoch in range(cfg.epoch_size):
         time_epoch = 0.0
         for i, data in enumerate(dataloader, 0):
             time_start = time.time()
@@ -52,14 +54,16 @@ if __name__ == "__main__":
             labels = labels.to(device)
             # zeros the parameter gradients
             optimizer.zero_grad()
-            with torch.cuda.profiler.profile():
-                network(inputs)
-                with torch.autograd.profiler.emit_nvtx():
-                    outputs = network(inputs)
-            break
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+            with autocast():
+                outputs = network(inputs)
+                loss = criterion(outputs, labels)
+#             outputs = network(inputs)
+#             loss = criterion(outputs, labels)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+#             loss.backward()
+#             optimizer.step()
             scheduler.step()
             # print statistics
             running_loss = loss.item()

@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 import time
 import os
 from queue import Queue
+from torch.cuda.amp import autocast as autocast, GradScaler
 
 from config import cfg
 from dali_pipeline import HybridTrainPipe
@@ -65,6 +66,8 @@ def main_worker(local_rank, args):
         optimizer,
         gamma=cfg.lr_decay_rate,
         step_size=cfg.lr_decay_epoch*step_per_epoch)
+    
+    scaler = GradScaler()
 
     if args.local_rank == 0:
         q_ckpt = Queue(maxsize=cfg.keep_checkpoint_max)
@@ -78,11 +81,17 @@ def main_worker(local_rank, args):
             inputs, labels = data[0].cuda(), data[1].cuda()
             # zeros the parameter gradients
             optimizer.zero_grad()
-            outputs = network(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
+            
+            with autocast():
+                outputs = network(inputs)
+                loss = criterion(outputs, labels)
+#             outputs = network(inputs)
+#             loss = criterion(outputs, labels)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+#             loss.backward()
+#             optimizer.step()
             # print statistics
             running_loss = loss.item()
             time_end = time.time()

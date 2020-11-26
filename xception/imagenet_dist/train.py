@@ -15,8 +15,6 @@ from queue import Queue
 
 from config import cfg
 from dataset import create_dataset_pytorch_imagenet_dist
-from dali_pipeline import HybridTrainPipe
-from nvidia.dali.plugin.pytorch import DALIClassificationIterator
 from xception import Xception
 
 class Trainer:

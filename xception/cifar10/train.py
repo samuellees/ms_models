@@ -14,7 +14,7 @@ from xception import Xception
 
 class Trainer:
     def __init__(self, network, criterion, optimizer, scheduler, dataloader_train, dataloader_test, device, summary_writer,
-                        epoch_size):
+                        epoch_size, ckpt_path):
         self.network = network
         self.criterion = criterion
         self.optimizer = optimizer
@@ -24,6 +24,7 @@ class Trainer:
         self.device = device
         self.step_per_epoch = len(dataloader_train)
         self.epoch_size = epoch_size
+        self.ckpt_path = ckpt_path
         self.epoch_id = 1
         self.global_step_id = 1
         self.summary_writer = summary_writer
@@ -89,9 +90,9 @@ class Trainer:
         if self.checkpoints.full():
             last_file = self.checkpoints.get()
             os.remove(last_file)
-        ckpt_file = ('%s/%d.ckpt' % (args.ckpt_path, self.epoch_id))
+        ckpt_file = ('%s/%d.ckpt' % (self.ckpt_path, self.epoch_id))
         self.checkpoints.put(ckpt_file)
-        torch.save(network, ckpt_file)
+        torch.save(self.network, ckpt_file)
 
     def step(self):
         self.train_epoch()
@@ -130,7 +131,8 @@ if __name__ == "__main__":
     summary_writer = SummaryWriter(log_dir='./summary')
     trainer = Trainer(network=network, criterion=criterion, optimizer=optimizer, scheduler=scheduler,
                       dataloader_train=dataloader_train, dataloader_test=dataloader_test, device=device,
-                      summary_writer=summary_writer, epoch_size=cfg.epoch_size)
+                      summary_writer=summary_writer, epoch_size=cfg.epoch_size,
+                      ckpt_path=args.ckpt_path)
 
     for epoch_id in range(cfg.epoch_size):
         trainer.step()

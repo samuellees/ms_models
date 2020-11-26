@@ -19,8 +19,8 @@
 
 # PATH_DATA="/userhome/datasets/ImageNet2012/mnt"
 # PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch"
-PATH_DATA="/gdata/ImageNet2012/val"
-PATH_MODEL="/userhome/ms_models/xception_pytorch_imagenet_mp"
+PATH_DATA="/gdata/ImageNet2012/"
+PATH_MODEL="/userhome/ms_models/xception/imagenet_dist"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
@@ -28,7 +28,7 @@ PATH_INFER=$PATH_MODEL"/infer"
 # PATH_CKPT=$PATH_TRAIN"/checkpoint/50-5005.ckpt"
 PATH_CKPT=$PATH_TRAIN"/checkpoint/100-5005.ckpt"
 
-PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
 
 if [ -d $PATH_INFER ];
 then

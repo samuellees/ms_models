@@ -18,14 +18,14 @@
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10_mp"
 
 PATH_DATA="/userhome/datasets"
-PATH_MODEL="/userhome/ms_models/xception_pytorch_cifar10_mp"
+PATH_MODEL="/userhome/ms_models/xception/cifar10"
 
 PATH_TRAIN=$PATH_MODEL"/train"
 PATH_INFER=$PATH_MODEL"/infer"
 
-PATH_CKPT=$PATH_TRAIN"/checkpoint/100-1562.ckpt"
+PATH_CKPT=$PATH_TRAIN"/checkpoint/64.ckpt"
 
-PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
 
 export DEVICE_ID=0
 

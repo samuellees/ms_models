@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
 
-def create_dataset_pytorch_cifar10(data_path, is_train=True, n_workers=8):
+def create_dataset_pytorch_cifar10_new(data_path, is_train=True, n_workers=8):
   if is_train:
       transform = transforms.Compose([
         transforms.RandomCrop((32, 32), (4, 4, 4, 4)),
@@ -25,7 +25,7 @@ def create_dataset_pytorch_cifar10(data_path, is_train=True, n_workers=8):
   return data_loader
 
 
-def create_dataset_pytorch_cifar10_old(data_path, is_train=True, n_workers=8):
+def create_dataset_pytorch_cifar10(data_path, is_train=True, n_workers=8):
   if is_train:
       transform = transforms.Compose([
         transforms.RandomResizedCrop(cfg.image_size),

@@ -17,16 +17,16 @@
 # PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/cifar-10-batches-py"
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10"
 
-PATH_MODEL="/userhome/ms_models/xception_pytorch_cifar10_mp"
-# PATH_DATA="/userhome/datasets"
-PATH_DATA="/dev/shm/dataset"
+PATH_MODEL="/userhome/ms_models/xception/cifar10"
+PATH_DATA="/userhome/datasets"
+# PATH_DATA="/dev/shm/dataset"
 
-PATH_TRAIN=$PATH_MODEL"/train"
-PATH_INFER=$PATH_MODEL"/infer"
+PATH_TRAIN=$PATH_MODEL"/train"$(date "+%Y%m%d%H%M%S")
+PATH_INFER=$PATH_MODEL"/infer"$(date "+%Y%m%d%H%M%S")
 
 PATH_CKPT=$PATH_TRAIN"/checkpoint"
 
-PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
 
 export DEVICE_ID=0
 

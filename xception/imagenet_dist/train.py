@@ -14,7 +14,8 @@ import os
 from queue import Queue
 
 from config import cfg
-from dataset import create_dataset_pytorch_imagenet_dist
+from dataset import create_dataset_pytorch_imagenet_dist_train
+from dataset import create_dataset_pytorch_imagenet
 from xception import Xception
 
 class Trainer:
@@ -126,8 +127,8 @@ def main_worker(local_rank, args):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(network.parameters(),
                           lr=cfg.lr_init, momentum=cfg.SGD_momentum)
-    dataloader_train = create_dataset_pytorch_imagenet_dist(data_path=args.data_path+'train', local_rank=local_rank)
-    dataloader_test = create_dataset_pytorch_imagenet_dist(data_path=args.data_path+'val', is_train=False)
+    dataloader_train = create_dataset_pytorch_imagenet_dist_train(data_path=args.data_path+'train', local_rank=local_rank)
+    dataloader_test = create_dataset_pytorch_imagenet(data_path=args.data_path+'val', is_train=False)
     step_per_epoch = len(dataloader_train)
     scheduler = optim.lr_scheduler.StepLR(optimizer, gamma=cfg.lr_decay_rate,
                                         step_size=cfg.lr_decay_epoch*step_per_epoch)

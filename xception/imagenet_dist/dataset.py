@@ -40,26 +40,16 @@ def create_dataset_pytorch_imagenet(data_path, is_train=True, n_workers=8):
   return data_loader
 
 
-def create_dataset_pytorch_imagenet_dist(data_path, is_train=True, local_rank=0, n_workers=8):
-  if is_train:
-    transform = transforms.Compose([
-      transforms.RandomCrop((32, 32), (4, 4, 4, 4)),
-      transforms.RandomHorizontalFlip(),
-      transforms.Resize((cfg.image_size, cfg.image_size)),
-      transforms.ToTensor(),
-      transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-  else:
-    transform = transforms.Compose([
-        transforms.Resize((cfg.image_size, cfg.image_size)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
+def create_dataset_pytorch_imagenet_dist_train(data_path, local_rank=0, n_workers=8):
+  transform = transforms.Compose([
+    transforms.RandomCrop((32, 32), (4, 4, 4, 4)),
+    transforms.RandomHorizontalFlip(),
+    transforms.Resize((cfg.image_size, cfg.image_size)),
+    transforms.ToTensor(),
+    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
   dataset = torchvision.datasets.ImageFolder(root=data_path, transform=transform)
-  if is_train:
-    sampler = torch.utils.data.distributed.DistributedSampler(dataset, rank=local_rank)
-    data_loader = DataLoader(dataset=dataset, batch_size=cfg.batch_size, 
-                              drop_last=True, sampler=sampler, num_workers=n_workers)
-  else:
-    data_loader = DataLoader(dataset=dataset, batch_size=cfg.batch_size, shuffle=True, 
-                              drop_last=True, num_workers=n_workers)
+  sampler = torch.utils.data.distributed.DistributedSampler(dataset, rank=local_rank)
+  data_loader = DataLoader(dataset=dataset, batch_size=cfg.batch_size, 
+                            drop_last=True, sampler=sampler, num_workers=n_workers)
   return data_loader

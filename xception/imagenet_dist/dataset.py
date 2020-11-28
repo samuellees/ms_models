@@ -19,7 +19,7 @@ def create_dataset_pytorch_cifar10(data_path, is_train=True, n_workers=8):
   return data_loader
 
 
-def create_dataset_pytorch_imagenet(data_path, is_train=True, n_workers=8):
+def create_dataset_pytorch_imagenet(data_path, is_train=True, n_workers=4):
   if is_train:
       transform = transforms.Compose([
         transforms.RandomCrop((32, 32), (4, 4, 4, 4)),
@@ -40,7 +40,7 @@ def create_dataset_pytorch_imagenet(data_path, is_train=True, n_workers=8):
   return data_loader
 
 
-def create_dataset_pytorch_imagenet_dist_train(data_path, local_rank=0, n_workers=8):
+def create_dataset_pytorch_imagenet_dist_train(data_path, local_rank=0, n_workers=4):
   transform = transforms.Compose([
     transforms.RandomCrop((32, 32), (4, 4, 4, 4)),
     transforms.RandomHorizontalFlip(),

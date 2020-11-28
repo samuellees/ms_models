@@ -127,8 +127,10 @@ def main_worker(local_rank, args):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(network.parameters(),
                           lr=cfg.lr_init, momentum=cfg.SGD_momentum)
-    dataloader_train = create_dataset_pytorch_imagenet_dist_train(data_path=args.data_path+'train', local_rank=local_rank)
-    dataloader_test = create_dataset_pytorch_imagenet(data_path=args.data_path+'val', is_train=False)
+    dataloader_train = create_dataset_pytorch_imagenet_dist_train(
+            data_path=args.data_path+'train', local_rank=local_rank, n_workers=cfg.n_workers)
+    dataloader_test = create_dataset_pytorch_imagenet(
+            data_path=args.data_path+'val', is_train=False, n_workers=cfg.n_workers)
     step_per_epoch = len(dataloader_train)
     scheduler = optim.lr_scheduler.StepLR(optimizer, gamma=cfg.lr_decay_rate,
                                         step_size=cfg.lr_decay_epoch*step_per_epoch)

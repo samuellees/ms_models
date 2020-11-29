@@ -1,18 +1,13 @@
-import mindspore.nn as nn
-from mindspore import Tensor
-import mindspore
-from mindspore import context
+
+import torchvision
 
 
+data_path = '/userhome/datasets/ImageNet2012/mini_batch/'
+dataset = torchvision.datasets.ImageFolder(root=data_path, transform=None)
+train_dataset = torchvision.datasets.ImageFolder(root=data_path+'train', transform=None)
+val_dataset = torchvision.datasets.ImageFolder(root=data_path+'val', transform=None)
 
-from queue import Queue
+print(len(dataset.imgs))
+print(len(train_dataset.imgs))
+print(len(val_dataset.imgs))
 
-
-q = Queue(maxsize=5)
-print(q.full())
-q.put(1)
-q.put(1)
-q.put(1)
-q.put(1)
-q.put(1)
-print(q.full())

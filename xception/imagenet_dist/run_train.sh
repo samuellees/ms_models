@@ -37,6 +37,7 @@ fi
 cd $PATH_MODEL
 mkdir $PATH_TRAIN
 cp *.py $PATH_TRAIN
+cp *.sh $PATH_TRAIN
 cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 

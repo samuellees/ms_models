@@ -17,8 +17,8 @@
 # PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012/train"
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet_mp"
 
-# PATH_DATA="/dev/shm/ImageNet2012/"
-PATH_DATA="/gdata/ImageNet2012/"
+PATH_DATA="/dev/shm/ImageNet2012/"
+# PATH_DATA="/gdata/ImageNet2012/"
 # PATH_DATA="/userhome/datasets/ImageNet2012/mini_batch/"
 PATH_MODEL="/userhome/ms_models/xception/imagenet_dist"
 
@@ -42,6 +42,6 @@ cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 
 echo "start training"
-$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT
-# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT > log.txt 2>&1 
+# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT
+$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT > log.txt 2>&1 
 cd ..

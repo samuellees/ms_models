@@ -22,9 +22,8 @@ def create_dataset_pytorch_cifar10(data_path, is_train=True, n_workers=8):
 def create_dataset_pytorch_imagenet(data_path, is_train=True, n_workers=4):
   if is_train:
       transform = transforms.Compose([
-        transforms.RandomCrop((32, 32), (4, 4, 4, 4)),
+        transforms.RandomResizedCrop(cfg.image_size),
         transforms.RandomHorizontalFlip(),
-        transforms.Resize((cfg.image_size, cfg.image_size)),
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
   else:
@@ -34,17 +33,15 @@ def create_dataset_pytorch_imagenet(data_path, is_train=True, n_workers=4):
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
   dataset = torchvision.datasets.ImageFolder(root=data_path, transform=transform)
-  data_loader = DataLoader(dataset=dataset, 
-                          batch_size=cfg.batch_size, shuffle=True, drop_last=True, num_workers=n_workers)
+  data_loader = DataLoader(dataset=dataset, batch_size=cfg.batch_size, shuffle=True, drop_last=True, num_workers=n_workers)
 
   return data_loader
 
 
 def create_dataset_pytorch_imagenet_dist_train(data_path, local_rank=0, n_workers=4):
   transform = transforms.Compose([
-    transforms.RandomCrop((32, 32), (4, 4, 4, 4)),
+    transforms.RandomResizedCrop(cfg.image_size),
     transforms.RandomHorizontalFlip(),
-    transforms.Resize((cfg.image_size, cfg.image_size)),
     transforms.ToTensor(),
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
@@ -52,27 +49,3 @@ def create_dataset_pytorch_imagenet_dist_train(data_path, local_rank=0, n_worker
   sampler = torch.utils.data.distributed.DistributedSampler(dataset, rank=local_rank)
   data_loader = DataLoader(dataset=dataset, batch_size=cfg.batch_size, drop_last=True, sampler=sampler, num_workers=n_workers)
   return data_loader
-
-
-def create_dataset_pytorch_imagenet_dist_train_2222(data_path, local_rank=0, n_workers=4):
-    # transform = transforms.Compose([
-    #     transforms.RandomResizedCrop(cfg.image_size),
-    #     transforms.RandomHorizontalFlip(),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-    # transform = transforms.Compose([
-    #     transforms.RandomHorizontalFlip(),
-    #     transforms.Resize((cfg.image_size, cfg.image_size)),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-    transform = transforms.Compose([
-        transforms.RandomCrop((32, 32), (4, 4, 4, 4)),
-        transforms.RandomHorizontalFlip(),
-        transforms.Resize((cfg.image_size, cfg.image_size)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-
-    train_dataset = torchvision.datasets.ImageFolder(root=data_path, transform=transform)
-    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, rank=local_rank)
-    dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=cfg.batch_size, drop_last=True, sampler=train_sampler, num_workers=n_workers)
-    return dataloader

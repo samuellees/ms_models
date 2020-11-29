@@ -56,7 +56,7 @@ def main_worker(local_rank, args):
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 
-    train_dataset = torchvision.datasets.ImageFolder(root=args.data_path, transform=transform)
+    train_dataset = torchvision.datasets.ImageFolder(root=args.data_path+'train', transform=transform)
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, rank=local_rank)
     dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=cfg.batch_size, sampler=train_sampler, num_workers=cfg.n_workers)
     step_per_epoch = len(dataloader)

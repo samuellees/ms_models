@@ -19,8 +19,8 @@ from dataset import create_dataset_pytorch_imagenet_dist_train
 from dataset import create_dataset_pytorch_imagenet
 from xception import Xception
 
-logging.basicConfig(format='%(asctime)s - %(filename)s[line:%(lineno)d] '
-                           '- %(levelname)s: %(message)s',level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)d '
+                           '%(levelname)s: %(message)s',level=logging.INFO)
 
 class Trainer:
     def __init__(self, network=None, criterion=None, optimizer=None, scheduler=None,

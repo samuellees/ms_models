@@ -27,7 +27,7 @@ PATH_INFER=$PATH_MODEL"/infer"$(date "+%Y%m%d%H%M%S")
 
 PATH_CKPT=$PATH_TRAIN"/checkpoint"
 
-PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
 # PYTHON_EXE="python"
 
 if [ -d $PATH_TRAIN ];

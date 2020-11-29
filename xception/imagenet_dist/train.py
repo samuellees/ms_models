@@ -26,7 +26,7 @@ class Trainer:
     def __init__(self, network=None, criterion=None, optimizer=None, scheduler=None,
                  dataloader_train=None, dataloader_test=None, device=None, 
                  summary_writer=None, epoch_size=None, local_rank=None,
-                 ckpt_path=None, barrier=None):
+                 ckpt_path=None):
         self.network = network
         self.criterion = criterion
         self.optimizer = optimizer
@@ -38,7 +38,6 @@ class Trainer:
         self.epoch_size = epoch_size
         self.local_rank = local_rank
         self.ckpt_path = ckpt_path
-        self.barrier = barrier
         self.step_per_epoch = len(dataloader_train)
         self.epoch_id = 1
         self.global_step_id = 1
@@ -75,52 +74,51 @@ class Trainer:
         if self.local_rank == 0:
             logging.info('Epoch time: %10.4f, per step time: %7.4f' % (time_epoch, time_epoch / self.step_per_epoch))
     
-    # only called by process 0 
     def eval_training(self):
-        if self.local_rank != 0: return
         self.network.eval()
         time_start = time.time()
         test_loss = 0.0 # cost function error
         total_samples = 0.0
         correct_samples = 0.0
-        for (inputs, labels) in self.dataloader_test:
-            inputs = inputs.cuda()
-            labels = labels.cuda()
-            outputs = self.network(inputs)
-            loss = self.criterion(outputs, labels)
-            _, max_index = torch.max(outputs, dim=-1)
-            test_loss += loss.item()
-            total_samples += labels.size(0)
-            correct_samples += (max_index == labels).sum()
+        with torch.no_grad():
+            for (inputs, labels) in self.dataloader_test:
+                inputs = inputs.cuda()
+                labels = labels.cuda()
+                outputs = self.network(inputs)
+                loss = self.criterion(outputs, labels)
+                _, max_index = torch.max(outputs, dim=-1)
+                test_loss += loss.item()
+                total_samples += labels.size(0)
+                correct_samples += (max_index == labels).sum()
 
         time_finish = time.time()
         accuracy = correct_samples / total_samples
         avg_loss = test_loss / len(self.dataloader_test)
-        logging.info('Test set: Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed:{:.2f}s'.format(
-            avg_loss, accuracy, time_finish - time_start
-        ))
-        # save best checkpoint
-        if accuracy > self.best_acc:
-            self.best_acc = accuracy
-            if self.checkpoints.full():
-                last_file = self.checkpoints.get()
-                os.remove(last_file)
-            ckpt_file = ('%s/%d.ckpt' % (self.ckpt_path, self.epoch_id))
-            self.checkpoints.put(ckpt_file)
-            torch.save(self.network, ckpt_file)
-        # summary
-        self.summary_writer.add_scalar('Test/Average loss', avg_loss, self.epoch_id)
-        self.summary_writer.add_scalar('Test/Accuracy', accuracy, self.epoch_id)
-        self.summary_writer.add_scalar('Test/Best accuracy', self.best_acc, self.epoch_id)
+        if self.local_rank == 0:
+            logging.info('Test set: Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed:{:.2f}s'.format(
+                avg_loss, accuracy, time_finish - time_start
+            ))
+            # save best checkpoint
+            if accuracy > self.best_acc:
+                self.best_acc = accuracy
+                if self.checkpoints.full():
+                    last_file = self.checkpoints.get()
+                    os.remove(last_file)
+                ckpt_file = ('%s/%d.ckpt' % (self.ckpt_path, self.epoch_id))
+                self.checkpoints.put(ckpt_file)
+                torch.save(self.network, ckpt_file)
+            # summary
+            self.summary_writer.add_scalar('Test/Average loss', avg_loss, self.epoch_id)
+            self.summary_writer.add_scalar('Test/Accuracy', accuracy, self.epoch_id)
+            self.summary_writer.add_scalar('Test/Best accuracy', self.best_acc, self.epoch_id)
         return accuracy
 
     def step(self):
         self.train_epoch()
         self.eval_training()
-        barrier.wait()
         self.epoch_id += 1
 
-def main_worker(local_rank, args, barrier):
+def main_worker(local_rank, args):
     args.local_rank = local_rank
     # prepare dist environment
     dist.init_process_group(backend='nccl', rank=args.local_rank, world_size=args.world_size)
@@ -134,9 +132,7 @@ def main_worker(local_rank, args, barrier):
                           lr=cfg.lr_init, momentum=cfg.SGD_momentum)
     dataloader_train = create_dataset_pytorch_imagenet_dist_train(
             data_path=args.data_path+'train', local_rank=local_rank, n_workers=cfg.n_workers)
-    dataloader_test = None
-    if local_rank == 0:
-        dataloader_test = create_dataset_pytorch_imagenet(data_path=args.data_path+'val', is_train=False, n_workers=cfg.n_workers)
+    dataloader_test = create_dataset_pytorch_imagenet(data_path=args.data_path+'val', is_train=False, n_workers=cfg.n_workers)
 
     step_per_epoch = len(dataloader_train)
     scheduler = optim.lr_scheduler.StepLR(optimizer, gamma=cfg.lr_decay_rate,
@@ -147,10 +143,13 @@ def main_worker(local_rank, args, barrier):
     trainer = Trainer(network=network, criterion=criterion, optimizer=optimizer, scheduler=scheduler,
                       dataloader_train=dataloader_train, dataloader_test=dataloader_test,
                       summary_writer=summary_writer, epoch_size=cfg.epoch_size,
-                      ckpt_path=args.ckpt_path, local_rank=local_rank, barrier=barrier)
+                      ckpt_path=args.ckpt_path, local_rank=local_rank)
 
     for epoch_id in range(cfg.epoch_size):
         trainer.step()
+
+    if local_rank == 0:
+        summary_writer.close()
 
 
 if __name__ == "__main__":
@@ -163,5 +162,4 @@ if __name__ == "__main__":
     main_args.world_size = torch.cuda.device_count()
     os.environ['MASTER_ADDR'] = '127.0.0.1'
     os.environ['MASTER_PORT'] = '29500'
-    barrier = mp.Barrier(parties=main_args.world_size)
-    mp.spawn(main_worker, nprocs=main_args.world_size, args=(main_args, barrier,))
+    mp.spawn(main_worker, nprocs=main_args.world_size, args=(main_args,))

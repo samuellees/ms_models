@@ -19,17 +19,14 @@ network config setting, will be used in train.py
 from easydict import EasyDict as edict
 
 cfg = edict({
-    'lr_init': 0.045,
+    'lr_init': 0.5,
     'lr_decay_rate': 0.94,
-    'lr_decay_epoch': 2,
     'SGD_momentum': 0.9,
-#     'rmsprop_decay': 0.9,
-#     'rmsprop_momentum': 0.9,
-#     'rmsprop_epsilon': 1.0,
-
-    'epoch_size': 100,
+    'SGD_weight_decay': 4e-5,
+    'n_workers': 4,
+    'epoch_size': 800,
     'batch_size': 128,
     'buffer_size': 1000,
     'num_classes': 10,
-    'image_size': 299
+    'image_size': 224
 })

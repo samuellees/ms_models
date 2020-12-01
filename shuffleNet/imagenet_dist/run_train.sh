@@ -14,8 +14,8 @@
 # limitations under the License.
 # ============================================================================
 
-# PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/ILSVRC2012/train"
-# PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_imagenet_mp"
+# PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/cifar-10-batches-py"
+# PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10"
 
 PATH_DATA="/dev/shm/ImageNet2012/"
 # PATH_DATA="/gdata/ImageNet2012/"
@@ -27,8 +27,9 @@ PATH_INFER=$PATH_MODEL"/infer"$(date "+%Y%m%d%H%M%S")
 
 PATH_CKPT=$PATH_TRAIN"/checkpoint"
 
-PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python"
-# PYTHON_EXE="python"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
+
+export DEVICE_ID=0
 
 if [ -d $PATH_TRAIN ];
 then
@@ -37,11 +38,10 @@ fi
 cd $PATH_MODEL
 mkdir $PATH_TRAIN
 cp *.py $PATH_TRAIN
-cp *.sh $PATH_TRAIN
 cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 
-echo "start training"
+echo "start training for device $DEVICE_ID"
 # $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT
 $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT > log.txt 2>&1 
 cd ..

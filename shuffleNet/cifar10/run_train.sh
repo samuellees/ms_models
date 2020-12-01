@@ -18,8 +18,8 @@
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10"
 
 PATH_MODEL="/userhome/ms_models/shuffleNet/cifar10"
-PATH_DATA="/userhome/datasets"
-# PATH_DATA="/dev/shm/dataset"
+# PATH_DATA="/userhome/datasets"
+PATH_DATA="/dev/shm/dataset"
 
 PATH_TRAIN=$PATH_MODEL"/train"$(date "+%Y%m%d%H%M%S")
 PATH_INFER=$PATH_MODEL"/infer"$(date "+%Y%m%d%H%M%S")
@@ -41,6 +41,6 @@ cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 
 echo "start training for device $DEVICE_ID"
-$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
-# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
+# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
+$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
 cd ..

@@ -15,9 +15,9 @@ from queue import Queue
 import logging
 
 from config import cfg
-from dataset import create_dataset_pytorch_imagenet_dist_train
-from dataset import create_dataset_pytorch_imagenet
-from xception import Xception
+from utils import accuracy, CrossEntropyLabelSmooth
+from dataset import create_dataset_pytorch_imagenet_dist_train, create_dataset_pytorch_imagenet
+from shuffleNet import ShuffleNetV1
 
 logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)d '
                            '%(levelname)s: %(message)s',level=logging.INFO)
@@ -41,12 +41,17 @@ class Trainer:
         self.step_per_epoch = len(dataloader_train)
         self.epoch_id = 1
         self.global_step_id = 1
-        self.checkpoints = Queue(maxsize=1)
-        self.best_acc = 0.0
+        self.checkpoints_1 = Queue(maxsize=1)
+        self.checkpoints_5 = Queue(maxsize=1)
+        self.best_val_acc = 0.0
+        self.best_val_acc5 = 0.0
 
     def train_epoch(self):
         self.network.train()
         time_epoch = 0.0
+        total_samples = 0.0
+        train_acc = 0.0
+        train_acc5 = 0.0
         for batch_idx, data in enumerate(self.dataloader_train, 0):
             time_start = time.time()
             inputs, labels = data
@@ -60,6 +65,10 @@ class Trainer:
             self.optimizer.step()
             self.scheduler.step()
             # print statistics
+            total_samples += labels.size(0)
+            [prec1, prec5] = accuracy(outputs, labels, topk=(1, 5))
+            train_acc += prec1
+            train_acc5 += prec5
             running_loss = loss.item()
             time_end = time.time()
             time_step = time_end - time_start
@@ -72,14 +81,19 @@ class Trainer:
             self.global_step_id += 1
         
         if self.local_rank == 0:
+            train_acc /= total_samples
+            train_acc5 /= total_samples
             logging.info('Epoch time: %10.4f, per step time: %7.4f' % (time_epoch, time_epoch / self.step_per_epoch))
+            self.summary_writer.add_scalar('Train/acc1', train_acc, self.epoch_id)
+            self.summary_writer.add_scalar('Train/acc5', train_acc5, self.epoch_id)
     
     def eval_training(self):
         self.network.eval()
         time_start = time.time()
         test_loss = 0.0 # cost function error
         total_samples = 0.0
-        correct_samples = 0.0
+        val_acc = 0.0
+        val_acc5 = 0.0
         with torch.no_grad():
             for (inputs, labels) in self.dataloader_test:
                 inputs = inputs.cuda()
@@ -89,29 +103,42 @@ class Trainer:
                 _, max_index = torch.max(outputs, dim=-1)
                 test_loss += loss.item()
                 total_samples += labels.size(0)
-                correct_samples += (max_index == labels).sum()
+                [prec1, prec5] = accuracy(outputs, labels, topk=(1, 5))
+                val_acc += prec1
+                val_acc5 += prec5
 
         time_finish = time.time()
-        accuracy = correct_samples / total_samples
+        val_acc /= total_samples
+        val_acc5 /= total_samples
         avg_loss = test_loss / len(self.dataloader_test)
         if self.local_rank == 0:
-            logging.info('Test set: Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed:{:.2f}s'.format(
-                avg_loss, accuracy, time_finish - time_start
+            logging.info('Test set: Average loss: {:.4f}, Accuracy1: {:.4f}, Accuracy5: {:.4f}, Time consumed:{:.2f}s'.format(
+                avg_loss, val_acc, val_acc5, time_finish - time_start
             ))
             # save best checkpoint
-            if accuracy > self.best_acc:
-                self.best_acc = accuracy
-                if self.checkpoints.full():
-                    last_file = self.checkpoints.get()
+            if val_acc > self.best_val_acc:
+                self.best_val_acc = val_acc
+                if self.checkpoints_1.full():
+                    last_file = self.checkpoints_1.get()
                     os.remove(last_file)
-                ckpt_file = ('%s/%d.ckpt' % (self.ckpt_path, self.epoch_id))
-                self.checkpoints.put(ckpt_file)
+                ckpt_file = ('%s/%d.ckpt_acc1' % (self.ckpt_path, self.epoch_id))
+                self.checkpoints_1.put(ckpt_file)
+                torch.save(self.network, ckpt_file)
+            if val_acc5 > self.best_val_acc5:
+                self.best_val_acc5 = val_acc5
+                if self.checkpoints_5.full():
+                    last_file = self.checkpoints_5.get()
+                    os.remove(last_file)
+                ckpt_file = ('%s/%d.ckpt_acc5' % (self.ckpt_path, self.epoch_id))
+                self.checkpoints_5.put(ckpt_file)
                 torch.save(self.network, ckpt_file)
             # summary
             self.summary_writer.add_scalar('Test/Average loss', avg_loss, self.epoch_id)
-            self.summary_writer.add_scalar('Test/Accuracy', accuracy, self.epoch_id)
-            self.summary_writer.add_scalar('Test/Best accuracy', self.best_acc, self.epoch_id)
-        return accuracy
+            self.summary_writer.add_scalar('Test/Accuracy', val_acc, self.epoch_id)
+            self.summary_writer.add_scalar('Test/Accuracy5', val_acc5, self.epoch_id)
+            self.summary_writer.add_scalar('Test/Best accuracy', self.best_val_acc, self.epoch_id)
+            self.summary_writer.add_scalar('Test/Best accuracy5', self.best_val_acc5, self.epoch_id)
+        return val_acc, val_acc5
 
     def step(self):
         self.train_epoch()
@@ -123,20 +150,18 @@ def main_worker(local_rank, args):
     # prepare dist environment
     dist.init_process_group(backend='nccl', rank=args.local_rank, world_size=args.world_size)
     torch.cuda.set_device(args.local_rank)
-    network = Xception(num_classes=cfg.num_classes)
+    network = ShuffleNetV1(input_size=cfg.image_size, n_class=cfg.num_classes, model_size='2.0x', group=3)
     network = network.cuda()
-    network = torch.nn.parallel.DistributedDataParallel(
-        network, device_ids=[args.local_rank])
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(network.parameters(),
-                          lr=cfg.lr_init, momentum=cfg.SGD_momentum)
+    criterion = CrossEntropyLabelSmooth(cfg.num_classes, 0.1)
+    optimizer = optim.SGD(network.parameters(), lr=cfg.lr_init, momentum=cfg.SGD_momentum, weight_decay=cfg.SGD_weight_decay)
     dataloader_train = create_dataset_pytorch_imagenet_dist_train(
             data_path=args.data_path+'train', local_rank=local_rank, n_workers=cfg.n_workers)
     dataloader_test = create_dataset_pytorch_imagenet(data_path=args.data_path+'val', is_train=False, n_workers=cfg.n_workers)
-
     step_per_epoch = len(dataloader_train)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, gamma=cfg.lr_decay_rate,
-                                        step_size=cfg.lr_decay_epoch*step_per_epoch)
+    total_iters = step_per_epoch * cfg.epoch_size
+    scheduler = optim.lr_scheduler.LambdaLR(optimizer,
+                    lambda step : (1.0 - step * 1.0 / total_iters) if step <= total_iters else 0, 
+                    last_epoch=-1)
     summary_writer = None
     if local_rank == 0:
         summary_writer = SummaryWriter(log_dir='./summary')

@@ -37,6 +37,7 @@ class AvgrageMeter(object):
 		self.avg = self.sum / self.cnt
 
 
+# return topk correct samples number
 def accuracy(output, target, topk=(1,)):
 	maxk = max(topk)
 	batch_size = target.size(0)
@@ -48,7 +49,8 @@ def accuracy(output, target, topk=(1,)):
 	res = []
 	for k in topk:
 		correct_k = correct[:k].view(-1).float().sum(0)
-		res.append(correct_k.mul_(100.0/batch_size))
+		# res.append(correct_k.mul_(100.0/batch_size))
+		res.append(correct_k)
 	return res
 
 

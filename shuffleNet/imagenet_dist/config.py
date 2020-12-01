@@ -24,7 +24,7 @@ cfg = edict({
     'SGD_momentum': 0.9,
     'SGD_weight_decay': 4e-5,
     'n_workers': 4,
-    'epoch_size': 120,
+    'epoch_size': 250,
     'batch_size': 128,
     'buffer_size': 1000,
     'num_classes': 1000,

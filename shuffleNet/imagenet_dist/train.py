@@ -22,6 +22,11 @@ from shuffleNet import ShuffleNetV1
 logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)d '
                            '%(levelname)s: %(message)s',level=logging.INFO)
 
+def adjust_bn_momentum(model, iters):
+    for m in model.modules():
+        if isinstance(m, nn.BatchNorm2d):
+            m.momentum = 1 / iters
+
 class Trainer:
     def __init__(self, network=None, criterion=None, optimizer=None, scheduler=None,
                  dataloader_train=None, dataloader_test=None, device=None, 

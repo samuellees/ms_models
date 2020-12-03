@@ -23,7 +23,7 @@ cfg = edict({
     'lr_decay_rate': 0.94,
     'lr_decay_epoch': 2,
     'SGD_momentum': 0.9,
-    'epoch_size': 100,
+    'epoch_size': 200,
     'n_workers': 4,
     'batch_size': 128,
     'buffer_size': 1000,

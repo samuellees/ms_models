@@ -10,6 +10,7 @@ def create_dataset_pytorch_cifar10(data_path, is_train=True, n_workers=8):
   transform = transforms.Compose([
     transforms.RandomResizedCrop(cfg.image_size),
     transforms.RandomHorizontalFlip(),
+    transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
   ds_cifar10 = torchvision.datasets.CIFAR10(root=data_path, train=is_train,
@@ -24,6 +25,7 @@ def create_dataset_pytorch_imagenet(data_path, is_train=True, n_workers=4):
       transform = transforms.Compose([
         transforms.RandomResizedCrop(cfg.image_size),
         transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
         transforms.ToTensor(),
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
   else:
@@ -42,6 +44,7 @@ def create_dataset_pytorch_imagenet_dist_train(data_path, local_rank=0, n_worker
   transform = transforms.Compose([
     transforms.RandomResizedCrop(cfg.image_size),
     transforms.RandomHorizontalFlip(),
+    transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
     transforms.ToTensor(),
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
 

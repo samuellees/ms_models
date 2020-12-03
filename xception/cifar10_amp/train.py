@@ -3,14 +3,110 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
+from torch.cuda.amp import autocast as autocast, GradScaler
 import time
 import os
 from queue import Queue
-from torch.cuda.amp import autocast as autocast, GradScaler
+import logging
 
 from config import cfg
 from dataset import create_dataset_pytorch_cifar10
 from xception import Xception
+
+logging.basicConfig(format='%(asctime)s %(filename)s:%(lineno)d '
+                           '%(levelname)s: %(message)s',level=logging.INFO)
+
+class Trainer:
+    def __init__(self, network, criterion, optimizer, scheduler, dataloader_train, dataloader_test, device, summary_writer,
+                        epoch_size, ckpt_path):
+        self.network = network
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.dataloader_train = dataloader_train
+        self.dataloader_test = dataloader_test
+        self.device = device
+        self.step_per_epoch = len(dataloader_train)
+        self.epoch_size = epoch_size
+        self.ckpt_path = ckpt_path
+        self.epoch_id = 1
+        self.global_step_id = 1
+        self.summary_writer = summary_writer
+        self.checkpoints = Queue(maxsize=1)
+        self.scaler = GradScaler()
+        self.best_acc = 0.0
+
+    def train_epoch(self):
+        self.network.train()
+        time_epoch = 0.0
+        for batch_idx, data in enumerate(self.dataloader_train, 0):
+            time_start = time.time()
+            inputs, labels = data
+            inputs = inputs.to(self.device)
+            labels = labels.to(self.device)
+            # zeros the parameter gradients
+            self.optimizer.zero_grad()
+            with autocast():
+                outputs = self.network(inputs)
+                loss = self.criterion(outputs, labels)
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+            self.scheduler.step()
+            # print statistics
+            running_loss = loss.item()
+            time_end = time.time()
+            time_step = time_end - time_start
+            time_epoch = time_epoch + time_step
+            logging.info('Epoch: [%3d/%3d], step: [%5d/%5d], loss: [%6.4f], time: [%.4f]' %
+                        (self.epoch_id, self.epoch_size, batch_idx + 1, self.step_per_epoch, 
+                        running_loss, time_step))
+            self.summary_writer.add_scalar('Train/loss', running_loss, self.global_step_id)
+            self.global_step_id += 1
+        
+        logging.info('Epoch time: %10.4f, per step time: %7.4f' % (time_epoch, time_epoch / self.step_per_epoch))
+    
+    def eval_training(self):
+        self.network.eval()
+        time_start = time.time()
+        test_loss = 0.0 # cost function error
+        total_samples = 0.0
+        correct_samples = 0.0
+        with torch.no_grad():
+            for (inputs, labels) in self.dataloader_test:
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
+                outputs = self.network(inputs)
+                loss = self.criterion(outputs, labels)
+                _, max_index = torch.max(outputs, dim=-1)
+                test_loss += loss.item()
+                total_samples += labels.size(0)
+                correct_samples += (max_index == labels).sum()
+
+        time_finish = time.time()
+        accuracy = correct_samples / total_samples
+        avg_loss = test_loss / len(self.dataloader_test)
+        logging.info('Test set: Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed:{:.2f}s'.format(
+            avg_loss, accuracy, time_finish - time_start
+        ))
+        # save best checkpoint
+        if accuracy > self.best_acc:
+            self.best_acc = accuracy
+            if self.checkpoints.full():
+                last_file = self.checkpoints.get()
+                os.remove(last_file)
+            ckpt_file = ('%s/%d.ckpt' % (self.ckpt_path, self.epoch_id))
+            self.checkpoints.put(ckpt_file)
+            torch.save(self.network, ckpt_file)
+        self.summary_writer.add_scalar('Test/Average loss', avg_loss, self.epoch_id)
+        self.summary_writer.add_scalar('Test/Accuracy', accuracy, self.epoch_id)
+        return accuracy
+
+    def step(self):
+        self.train_epoch()
+        self.eval_training()
+        self.epoch_id += 1
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='pytorch on CUDA')
@@ -24,69 +120,24 @@ if __name__ == "__main__":
 
     device = torch.device('cuda:'+str(args.device_id))
     network = Xception(num_classes=cfg.num_classes)
-    network.train()
     network.to(device)
     criterion = nn.CrossEntropyLoss()
-#     optimizer = optim.RMSprop(network.parameters(), 
-#                                 lr=cfg.lr_init, 
-#                                 eps=cfg.rmsprop_epsilon,
-#                                 momentum=cfg.rmsprop_momentum, 
-#                                 alpha=cfg.rmsprop_decay)
-    
     optimizer = optim.SGD(network.parameters(), lr=cfg.lr_init, momentum=cfg.SGD_momentum)
-    dataloader = create_dataset_pytorch_cifar10(args.data_path)
-    step_per_epoch = len(dataloader)
+    dataloader_train = create_dataset_pytorch_cifar10(args.data_path)
+    dataloader_test = create_dataset_pytorch_cifar10(args.data_path, is_train=False)
     scheduler = optim.lr_scheduler.StepLR(
                                 optimizer, 
                                 gamma=cfg.lr_decay_rate, 
-                                step_size=cfg.lr_decay_epoch*step_per_epoch)
-    q_ckpt = Queue(maxsize=cfg.keep_checkpoint_max)
-    
-    scaler = GradScaler()
+                                step_size=cfg.lr_decay_epoch*len(dataloader_train))
+    summary_writer = SummaryWriter(log_dir='./summary')
+    trainer = Trainer(network=network, criterion=criterion, optimizer=optimizer, scheduler=scheduler,
+                      dataloader_train=dataloader_train, dataloader_test=dataloader_test, device=device,
+                      summary_writer=summary_writer, epoch_size=cfg.epoch_size,
+                      ckpt_path=args.ckpt_path)
 
-    global_step_id = 0
-    for epoch in range(cfg.epoch_size):
-        time_epoch = 0.0
-        for i, data in enumerate(dataloader, 0):
-            time_start = time.time()
-            inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-            # zeros the parameter gradients
-            optimizer.zero_grad()
-            with autocast():
-                outputs = network(inputs)
-                loss = criterion(outputs, labels)
-#             outputs = network(inputs)
-#             loss = criterion(outputs, labels)
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-#             loss.backward()
-#             optimizer.step()
-            scheduler.step()
-            # print statistics
-            running_loss = loss.item()
-            time_end = time.time()
-            time_step = time_end - time_start
-            time_epoch = time_epoch + time_step
-            print('Epoch: [%3d/%3d], step: [%5d/%5d], loss: [%6.4f], time: [%.4f]' %
-                        (epoch + 1, cfg.epoch_size, i + 1, step_per_epoch, 
-                        running_loss, time_step), flush=True)
+    for epoch_id in range(cfg.epoch_size):
+        trainer.step()
 
-            # save checkpoint every epoch
-            global_step_id = global_step_id + 1
-            if global_step_id % cfg.save_checkpoint_steps == 0:
-                if q_ckpt.full():
-                    last_file = q_ckpt.get()
-                    os.remove(last_file)
-                ckpt_file = ('%s/%d-%d.ckpt' % 
-                            (args.ckpt_path, epoch + 1, i + 1))
-                q_ckpt.put(ckpt_file)
-                torch.save(network, ckpt_file)
-        
-        print('Epoch time: %10.4f, per step time: %7.4f' %
-            (time_epoch, time_epoch / step_per_epoch), flush=True)
-
-    print('Finished Training', flush=True)
+    summary_writer.close()
+    print('Finished Training')
     

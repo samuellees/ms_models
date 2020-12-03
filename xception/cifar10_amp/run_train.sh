@@ -17,12 +17,12 @@
 # PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/cifar-10-batches-py"
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10"
 
-PATH_MODEL="/userhome/ms_models/xception_pytorch_cifar10_mp_amp"
+PATH_MODEL="/userhome/ms_models/xception/cifar10_amp"
 # PATH_DATA="/userhome/datasets"
 PATH_DATA="/dev/shm/dataset"
 
-PATH_TRAIN=$PATH_MODEL"/train"
-PATH_INFER=$PATH_MODEL"/infer"
+PATH_TRAIN=$PATH_MODEL"/train"$(date "+%Y%m%d%H%M%S")
+PATH_INFER=$PATH_MODEL"/infer"$(date "+%Y%m%d%H%M%S")
 
 PATH_CKPT=$PATH_TRAIN"/checkpoint"
 
@@ -41,6 +41,6 @@ cd $PATH_TRAIN || exit
 mkdir $PATH_CKPT
 
 echo "start training for device $DEVICE_ID"
-$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
-# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
+# $PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID
+$PYTHON_EXE train.py --data_path=$PATH_DATA --ckpt_path=$PATH_CKPT  --device_id=$DEVICE_ID > log.txt 2>&1 
 cd ..

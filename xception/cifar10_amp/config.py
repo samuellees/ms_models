@@ -23,15 +23,9 @@ cfg = edict({
     'lr_decay_rate': 0.94,
     'lr_decay_epoch': 2,
     'SGD_momentum': 0.9,
-#     'rmsprop_decay': 0.9,
-#     'rmsprop_momentum': 0.9,
-#     'rmsprop_epsilon': 1.0,
-
-    'epoch_size': 200,
-    'batch_size': 32,
+    'epoch_size': 150,
+    'batch_size': 128,
     'buffer_size': 1000,
-    'keep_checkpoint_max': 200,
-    'save_checkpoint_steps': 1562,
     'num_classes': 10,
     'image_size': 299
 })

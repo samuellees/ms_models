@@ -7,6 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 import time
 import os
 from queue import Queue
+from torch.cuda.amp import autocast as autocast, GradScaler
 import logging
 
 from config import cfg
@@ -34,6 +35,7 @@ class Trainer:
         self.epoch_id = 1
         self.global_step_id = 1
         self.checkpoints_1 = Queue(maxsize=1)
+        self.scaler = GradScaler()
         self.best_acc = 0.0
 
     def train_epoch(self):
@@ -47,11 +49,12 @@ class Trainer:
             inputs = inputs.to(self.device)
             labels = labels.to(self.device)
             # zeros the parameter gradients
-            self.optimizer.zero_grad()
-            outputs = self.network(inputs)
-            loss = self.criterion(outputs, labels)
-            loss.backward()
-            self.optimizer.step()
+            with autocast():
+                outputs = self.network(inputs)
+                loss = self.criterion(outputs, labels)
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
             self.scheduler.step()
             # acc
             _, max_index = torch.max(outputs, dim=-1)
@@ -97,7 +100,7 @@ class Trainer:
         ))
         # save best checkpoint
         if accuracy > self.best_acc:
-            self.best_val_acc = accuracy
+            self.best_acc = accuracy
             if self.checkpoints_1.full():
                 last_file = self.checkpoints_1.get()
                 os.remove(last_file)

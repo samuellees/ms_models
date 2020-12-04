@@ -44,7 +44,6 @@ class Trainer:
         self.global_step_id = 1
         self.checkpoints = Queue(maxsize=1)
         self.scaler = GradScaler()
-        self.net_stats = self.optimizer.state_dict()['param_groups'][0]
         self.best_acc = 0.0
 
     def train_epoch(self):
@@ -74,7 +73,7 @@ class Trainer:
                             (self.epoch_id, self.epoch_size, batch_idx + 1, self.step_per_epoch, 
                             running_loss, time_step))
                 self.summary_writer.add_scalar('Train/loss', running_loss, self.global_step_id)
-                self.summary_writer.add_scalar('Train/lr', self.net_stats['lr'], self.global_step_id)
+                self.summary_writer.add_scalar('Train/lr', self.optimizer.state_dict()['param_groups'][0]['lr'], self.global_step_id)
             self.global_step_id += 1
         
         if self.local_rank == 0:

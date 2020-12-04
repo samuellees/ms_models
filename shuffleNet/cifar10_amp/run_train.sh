@@ -17,7 +17,7 @@
 # PATH_DATA="/gpfs/share/home/1600011337/likesen/datasets/cifar-10-batches-py"
 # PATH_MODEL="/gpfs/share/home/1600011337/likesen/ms_models/xception_pytorch_cifar10"
 
-PATH_MODEL="/userhome/ms_models/shuffleNet/cifar10"
+PATH_MODEL="/userhome/ms_models/shuffleNet/cifar10_amp"
 # PATH_DATA="/userhome/datasets"
 PATH_DATA="/dev/shm/dataset"
 

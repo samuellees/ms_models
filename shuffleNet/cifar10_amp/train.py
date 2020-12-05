@@ -49,6 +49,7 @@ class Trainer:
             inputs = inputs.to(self.device)
             labels = labels.to(self.device)
             # zeros the parameter gradients
+            # self.optimizer.zero_grad()    // 好像不清零也没事？？？？？
             with autocast():
                 outputs = self.network(inputs)
                 loss = self.criterion(outputs, labels)

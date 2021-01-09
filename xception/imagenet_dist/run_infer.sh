@@ -28,7 +28,8 @@ PATH_INFER=$PATH_MODEL"/infer"
 # PATH_CKPT=$PATH_TRAIN"/checkpoint/50-5005.ckpt"
 PATH_CKPT=$PATH_TRAIN"/checkpoint/100-5005.ckpt"
 
-PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
+# PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
+PYTHON_EXE="/opt/conda/bin/python"
 
 if [ -d $PATH_INFER ];
 then

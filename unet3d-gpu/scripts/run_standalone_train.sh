@@ -14,14 +14,49 @@
 # limitations under the License.
 # ============================================================================
 
-if [ $# != 1 ]
+if [ $# -ne 2 ]
 then
-    echo "=============================================================================================================="
-    echo "Please run the script as: "
-    echo "bash scripts/run_standalone_train.sh [DATASET]"
-    echo "for example: bash run_standalone_train.sh /path/to/data/"
-    echo "=============================================================================================================="
+    echo "Usage: sh run_distribute_train_ascend.sh [IMAGE_PATH] [SEG_PATH]"
+exit 1
 fi
 
+get_real_path(){
+  if [ "${1:0:1}" == "/" ]; then
+    echo "$1"
+  else
+    echo "$(realpath -m $PWD/$1)"
+  fi
+}
+
+PATH1=$(get_real_path $1)
+echo $PATH1
+if [ ! -d $PATH1 ]
+then
+    echo "error: IMAGE_PATH=$PATH1 is not a file"
+exit 1
+fi
+
+PATH2=$(get_real_path $2)
+echo $PATH2
+if [ ! -d $PATH2 ]
+then
+    echo "error: SEG_PATH=$PATH2 is not a file"
+exit 1
+fi
+
+ulimit -u unlimited
+export DEVICE_NUM=1
 export DEVICE_ID=0
-python train.py --data_url=$1 --seg_url=$2 > train.log 2>&1 &
+export RANK_ID=0
+export RANK_SIZE=1
+
+rm -rf ./train
+mkdir ./train
+cp ../*.py ./train
+cp *.sh ./train
+cp -r ../src ./train
+cd ./train || exit
+echo "start training for device $DEVICE_ID"
+env > env.log
+python train.py --data_url=$PATH1 --seg_url=$PATH2 > train.log 2>&1 &
+cd ..

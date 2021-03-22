@@ -57,7 +57,6 @@ class ResidualUnit(nn.Cell):
                                        pad_mode="pad", stride=self.stride, pad=1)
             self.batchNormal2 = BatchNorm3d(num_features=self.out_channel)
 
-        self.dropout = P.Dropout3d(keep_prob=0.5)
 
     def construct(self, x):
         out = self.down_conv_1(x)
@@ -103,7 +102,6 @@ class Up(nn.Cell):
                                  is_output=is_output).to_float(dtype)
         self.batchNormal1 = BatchNorm3d(num_features=self.out_channel)
         self.relu = nn.PReLU()
-        self.dropout = P.Dropout3d(keep_prob=0.5)
 
     def construct(self, input_data, down_input):
         x = self.concat((input_data, down_input))

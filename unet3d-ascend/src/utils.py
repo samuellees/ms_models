@@ -73,8 +73,6 @@ def ensure_tuple_size(tup, dim, pad_val=0):
     """
     Returns a copy of `tup` with `dim` values by either shortened or padded with `pad_val` as necessary.
     """
-    if not isinstance(tup, Iterable):
-        tup = (tup,)
     tup = tuple(tup) + (pad_val,) * dim
     return tuple(tup[:dim])
 

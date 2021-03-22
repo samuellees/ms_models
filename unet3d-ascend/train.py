@@ -20,7 +20,7 @@ import mindspore
 import mindspore.nn as nn
 from mindspore import Model, context
 from mindspore.context import ParallelMode
-from mindspore.communication.management import init, get_group_size
+from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.train.loss_scale_manager import FixedLossScaleManager
 from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, LossMonitor, TimeMonitor
 from src.dataset import create_dataset
@@ -37,7 +37,7 @@ def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet3D on images and target masks')
     parser.add_argument('--data_url', dest='data_url', type=str, default='', help='image data directory')
     parser.add_argument('--seg_url', dest='seg_url', type=str, default='', help='seg data directory')
-    parser.add_argument('-t', '--run_distribute', type=ast.literal_eval, default=False, \
+    parser.add_argument('--run_distribute', dest='run_distribute', type=ast.literal_eval, default=False, \
                         help='Run distribute, default: false')
     return parser.parse_args()
 
@@ -47,13 +47,17 @@ def train_net(data_dir,
               config=None):
     if run_distribute:
         init()
-        group_size = get_group_size()
+        rank_id = get_rank()
+        rank_size = get_group_size()
         parallel_mode = ParallelMode.DATA_PARALLEL
         context.set_auto_parallel_context(parallel_mode=parallel_mode,
-                                          device_num=group_size,
-                                          gradients_mean=False)
+                                          device_num=rank_size,
+                                          gradients_mean=True)
+    else:
+        rank_id = 0
+        rank_size = 1
     train_dataset = create_dataset(data_path=data_dir, seg_path=seg_dir, config=config, \
-                                   is_training=True, run_distribute=run_distribute)
+                                    rank_size=rank_size, rank_id=rank_id, is_training=True)
     train_data_size = train_dataset.get_dataset_size()
     print("train dataset length is:", train_data_size)
 

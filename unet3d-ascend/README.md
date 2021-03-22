@@ -18,25 +18,29 @@
     - [Model Description](#model-description)
         - [Performance](#performance)
             - [Evaluation Performance](#evaluation-performance)
-        - [How to use](#how-to-use)
-            - [Inference](#inference)
+            - [Inference Performance](#inference-performance)
     - [Description of Random Situation](#description-of-random-situation)
     - [ModelZoo Homepage](#modelzoo-homepage)
 
 ## [Unet Description](#contents)
 
-Unet3D Medical model for 3D image segmentation. This implementation is as described  in the original paper [Unet3D: Learning Dense VolumetricSegmentation from Sparse Annotation](https://arxiv.org/abs/1606.06650). The network of Unet3D is similar to the Unet, it is use 3D operation instead of 2D operation.
-While the Unet is anentirely 2D architecture, the Unet3D proposed in this paper takes 3D volumesas input and processes them with corresponding 3D operation.
+Unet3D model is widely used for 3D medical image segmentation. The construct of Unet3D network is similar to the Unet, the main difference is that Unet3D use 3D operations like Conv3D while Unet is anentirely 2D architecture. To know more information about Unet3D network, you can read the original paper Unet3D: Learning Dense VolumetricSegmentation from Sparse Annotation.
 
 ## [Model Architecture](#contents)
 
-Unet3D model is created based on the previous Unet(2D), which includes an encoder part and a decoder part. The encoder part is used to analyze the whole picture and extract and analyze features, while the decoder part is to generate a segmented block image.
+Unet3D model is created based on the previous Unet(2D), which includes an encoder part and a decoder part. The encoder part is used to analyze the whole picture and extract and analyze features, while the decoder part is to generate a segmented block image. In this model, we also add residual block in the base block to improve the network.
 
 ## [Dataset](#contents)
 
 Dataset used: [LUNA16](https://luna16.grand-challenge.org/)
 
 - Description: The data is to automatically detect the location of nodules from volumetric CT images. 888 CT scans from LIDC-IDRI database are provided. The complete dataset is divided into 10 subsets that should be used for the 10-fold cross-validation. All subsets are available as compressed zip files.
+
+- Dataset size：888
+    - Train：855 images
+    - Test：33 images
+- Data format：zip
+    - Note：Data will be processed in convert_nifti.py
 
 ## [Environment Requirements](#contents)
 
@@ -54,29 +58,33 @@ After installing MindSpore via the official website, you can start training and 
 
 - Select the network and dataset to use
 
+Convert dataset into mifti format.
+python ./src/convert_nifti.py --input_path=/path/to/input_image/ --output_path=/path/to/output_image/
+
 Refer to `src/config.py`. We support some parameter configurations for quick start.
 
 - Run on Ascend
 
 ```python
 # run training example
-python train.py --data_url=/path/to/data/ --seg_url=/path/to/data/ > train.log 2>&1 &
+python train.py --data_url=/path/to/data/ --seg_url=/path/to/segment/ > train.log 2>&1 &
 OR
-bash scripts/run_standalone_train.sh [DATASET]
+bash scripts/run_standalone_train.sh [IMAGE_PATH] [SEG_PATH]
 
 # run distributed training example
-bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [DATASET]
+bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [IMAGE_PATH] [SEG_PATH]
 
 # run evaluation example
-python eval.py --data_url=/path/to/data/ --seg_url=/path/to/data/ --ckpt_path=/path/to/checkpoint/ > eval.log 2>&1 &
+python eval.py --data_url=/path/to/data/ --seg_url=/path/to/segment/ --ckpt_path=/path/to/checkpoint/ > eval.log 2>&1 &
 OR
-bash scripts/run_standalone_eval.sh [DATASET] [CHECKPOINT]
+bash scripts/run_standalone_eval.sh [IMAGE_PATH] [SEG_PATH] [CHECKPOINT]
 
 ## [Script Description](#contents)
 
 ### [Script and Sample Code](#contents)
 
 ```path
+
 .
 └─unet3D
   ├── README.md                       // descriptions about Unet3D
@@ -97,17 +105,19 @@ bash scripts/run_standalone_eval.sh [DATASET] [CHECKPOINT]
   ├── train.py                        // training script
   ├── eval.py                         // evaluation script
 
+```
+
 ### [Script Parameters](#contents)
 
 Parameters for both training and evaluation can be set in config.py
 
-- config for Unet, ISBI dataset
+- config for Unet3d, luna16 dataset
 
-  ```python
+```python
+
   'model': 'Unet3d',                  # model name
   'lr': 0.0001,                       # learning rate
   'epochs': 50,                       # total training epochs when run 1p
-  'distribute_epochs': 200,           # total training epochs when run 8p
   'batchsize': 1,                     # training batch size
   'num_classes': 4,                   # the number of classes in the dataset
   'num_channels': 1,                  # the number of channels
@@ -117,7 +127,10 @@ Parameters for both training and evaluation can be set in config.py
   'overlap': 0.25,                    # overlap rate
   'min_val': -500,                    # intersity original range min
   'max_val': 1000,                    # intersity original range max
-  ```
+  'upper_limit': 5                    # upper limit of num_classes
+  'lower_limit': 3                    # lower limit of num_classes
+
+```
 
 ## [Training Process](#contents)
 
@@ -126,9 +139,11 @@ Parameters for both training and evaluation can be set in config.py
 #### running on Ascend
 
 ```shell
-python train.py --data_url=/path/to/data/ -seg_url=/path/to/data/ > train.log 2>&1 &
+
+python train.py --data_url=/path/to/data/ -seg_url=/path/to/segment/ > train.log 2>&1 &
 OR
-bash scripts/run_standalone_train.sh [DATASET]
+bash scripts/run_standalone_train.sh [IMAGE_PATH] [SEG_PATH]
+
 ```
 
 The python command above will run in the background, you can view the results through the file `train.log`.
@@ -136,58 +151,75 @@ The python command above will run in the background, you can view the results th
 After training, you'll get some checkpoint files under the script folder by default. The loss value will be achieved as follows:
 
 ```shell
-# grep "loss is " train.log
-step: 1, loss is 0.7011719, fps is 0.25025035060906264
-step: 2, loss is 0.69433594, fps is 56.77693756377044
-step: 3, loss is 0.69189453, fps is 57.3293877244179
-step: 4, loss is 0.6894531, fps is 57.840651522059716
-step: 5, loss is 0.6850586, fps is 57.89903776054361
-step: 6, loss is 0.6777344, fps is 58.08073627299014
-...  
-step: 597, loss is 0.19030762, fps is 58.28088370287449
-step: 598, loss is 0.19958496, fps is 57.95493929352674
-step: 599, loss is 0.18371582, fps is 58.04039977720966
-step: 600, loss is 0.22070312, fps is 56.99692546024671
-```
 
-The model checkpoint will be saved in the current directory.
+epoch: 1 step: 855, loss is 0.55011123
+epoch time: 1443410.353 ms, per step time: 1688.199 ms
+epoch: 2 step: 855, loss is 0.58278626
+epoch time: 1172136.839 ms, per step time: 1370.920 ms
+epoch: 3 step: 855, loss is 0.43625978
+epoch time: 1135890.834 ms, per step time: 1328.537 ms
+epoch: 4 step: 855, loss is 0.06556784
+epoch time: 1180467.795 ms, per step time: 1380.664 ms
+
+```
 
 #### Distributed Training
 
+> Notes:
+> RANK_TABLE_FILE can refer to [Link](https://www.mindspore.cn/tutorial/training/en/master/advanced_use/distributed_training_ascend.html) , and the device_ip can be got as [Link](https://gitee.com/mindspore/mindspore/tree/master/model_zoo/utils/hccl_tools). For large models like InceptionV4, it's better to export an external environment variable `export HCCL_CONNECT_TIMEOUT=600` to extend hccl connection checking time from the default 120 seconds to 600 seconds. Otherwise, the connection could be timeout since compiling time increases with the growth of model size.
+>
+
 ```shell
-bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [DATASET]
+
+bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [IMAGE_PATH] [SEG_PATH]
+
 ```
 
-The above shell script will run distribute training in the background. You can view the results through the file `logs/device[X]/log.log`. The loss value will be achieved as follows:
+The above shell script will run distribute training in the background. You can view the results through the file `/train_parallel[X]/log.txt`. The loss value will be achieved as follows:
 
 ```shell
-# grep "loss is" logs/device0/log.log
-step: 1, loss is 0.70524895, fps is 0.15914689861221412
-step: 2, loss is 0.6925452, fps is 56.43668656967454
+
+epoch: 1 step: 107, loss is 0.8294426
+epoch time: 468891.643 ms, per step time: 4382.165 ms
+epoch: 2 step: 107, loss is 0.58278626
+epoch time: 165469.201 ms, per step time: 1546.441 ms
+epoch: 3 step: 107, loss is 0.43625978
+epoch time: 158915.771 ms, per step time: 1485.194 ms
+epoch: 4 step: 107, loss is 0.31168014
+epoch time: 157590.700 ms, per step time: 1472.810 ms
 ...
-step: 299, loss is 0.20551169, fps is 58.4039329983891
-step: 300, loss is 0.18949677, fps is 57.63118508760329
+epoch: 48 step: 107, loss is 0.030514292
+epoch time: 146814.723 ms, per step time: 1372.100 ms
+epoch: 49 step: 107, loss is 0.016280059
+epoch time: 172815.179 ms, per step time: 1615.095 ms
+epoch: 50 step: 107, loss is 0.020185348
+epoch time: 140476.520 ms, per step time: 1312.865 ms
+
 ```
 
 ## [Evaluation Process](#contents)
 
 ### Evaluation
 
-- evaluation on ISBI dataset when running on Ascend
+- evaluation on dataset when running on Ascend
 
 Before running the command below, please check the checkpoint path used for evaluation. Please set the checkpoint path to be the absolute full path, e.g., "username/unet3D/Unet3d-50_855.ckpt".
 
 ```shell
-python eval.py --data_url=/path/to/data/ --seg_url=/path/to/data/ --ckpt_path=/path/to/checkpoint/ > eval.log 2>&1 &
+
+python eval.py --data_url=/path/to/data/ --seg_url=/path/to/segment/ --ckpt_path=/path/to/checkpoint/ > eval.log 2>&1 &
 OR
-bash scripts/run_standalone_eval.sh [DATASET] [CHECKPOINT]
+bash scripts/run_standalone_eval.sh [IMAGE_PATH] [SEG_PATH] [CHECKPOINT_PATH]
+
 ```
 
 The above python command will run in the background. You can view the results through the file "eval.log". The accuracy of the test dataset will be as follows:
 
 ```shell
-# grep "Cross valid dice coeff is:" eval.log
-============== Cross valid dice coeff is: {'dice_coeff': 0.9085704886070473}
+
+# grep "eval average dice is:" eval.log
+eval average dice is 0.9039010010453671
+
 ```
 
 ## [Model Description](#contents)
@@ -197,17 +229,17 @@ The above python command will run in the background. You can view the results th
 #### Evaluation Performance
 
 | Parameters          | Ascend                                                    |
-| ------------------- | --------------------------------------------------------- | 
+| ------------------- | --------------------------------------------------------- |
 | Model Version       | Unet3D                                                    |
 | Resource            | Ascend 910; CPU 2.60GHz，192cores；Memory，755G            |
 | uploaded Date       | 03/18/2021 (month/day/year)                               |
 | MindSpore Version   | 1.1.0                                                     |
 | Dataset             | LUNA16                                                    |
-| Training Parameters | epoch = 50,  batch_size = 1                               | 
+| Training Parameters | epoch = 50,  batch_size = 1                               |
 | Optimizer           | Adam                                                      |
 | Loss Function       | SoftmaxCrossEntropyWithLogits                             |
-| Speed               | 8pcs: 90ms/step                                           |
-| Total time          | 8pcs: 4.81hours                                           |
+| Speed               | 8pcs: 1795ms/step                                         |
+| Total time          | 8pcs: 2.47hours                                           |
 | Parameters (M)      | 34                                                        |
 | Scripts             | <https://gitee.com/mindspore/mindspore/tree/master/model_zoo/official/cv/unet3D> | <https://gitee.com/mindspore/mindspore/tree/master/model_zoo/official/cv/unet3D> |
 
@@ -221,8 +253,12 @@ The above python command will run in the background. You can view the results th
 | MindSpore Version   | 1.1.0                       |
 | Dataset             | LUNA16                      |
 | batch_size          | 1                           |
-| Dice                | dice =                      |
-| Model for inference | 34M(.ckpt file)             |
+| Dice                | dice = 0.9039               |
+| Model for inference | 56M(.ckpt file)             |
+
+# [Description of Random Situation](#contents)
+
+We set seed to 1 in train.py.
 
 ## [ModelZoo Homepage](#contents)
 

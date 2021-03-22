@@ -24,7 +24,7 @@ class UNet3d(nn.Cell):
         self.n_channels = config.in_channels
         self.n_classes = config.num_classes
 
-        #down
+        # down
         self.transpose = P.Transpose()
         self.down1 = Down(in_channel=1, out_channel=16, dtype=mstype.float16).to_float(mstype.float16)
         self.down2 = Down(in_channel=16, out_channel=32, dtype=mstype.float16).to_float(mstype.float16)
@@ -33,7 +33,7 @@ class UNet3d(nn.Cell):
         self.down5 = Down(in_channel=128, out_channel=256, stride=1, kernel_size=(1, 1, 1), \
                           dtype=mstype.float16).to_float(mstype.float16)
 
-        #up
+        # up
         self.up1 = Up(in_channel=256, down_in_channel=128, out_channel=64, \
                       dtype=mstype.float16).to_float(mstype.float16)
         self.up2 = Up(in_channel=64, down_in_channel=64, out_channel=32, \

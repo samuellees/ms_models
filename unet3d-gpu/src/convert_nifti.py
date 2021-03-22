@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import sys
+
 import os
 import argparse
-import SimpleITK as sitk
 from pathlib import Path
+import SimpleITK as sitk
 from src.config import config
 
 parser = argparse.ArgumentParser()
@@ -48,15 +48,15 @@ def convert_nifti(input_dir, output_dir, roi_size, file_types):
     for file_name in file_list:
         file_name = str(file_name)
         input_file_name, _ = os.path.splitext(os.path.basename(file_name))
-        img=sitk.ReadImage(file_name)
-        image_array = sitk.GetImageFromArray(img)
-        H, W, D = image_array.shape
-        if H < roi_size[0] or W < roi_size[1] or D < roi_size[1]:
+        img = sitk.ReadImage(file_name)
+        image_array = sitk.GetArrayFromImage(img)
+        D, H, W = image_array.shape
+        if H < roi_size[0] or W < roi_size[1] or D < roi_size[2]:
+            print("file {} size is smaller than roi size, ignore it.".format(input_file_name))
             continue
-        print("parsing file_name: ", file_name)
         output_path = os.path.join(output_dir, input_file_name + ".nii.gz")
         sitk.WriteImage(img, output_path)
+        print("create output file {} success.".format(output_path))
 
 if __name__ == '__main__':
-    convert_nifti(args.input_dir, args.output_dir, config.roi_size, "*.mhd")
-
+    convert_nifti(args.input_path, args.output_path, config.roi_size, "*.mhd")

@@ -15,9 +15,10 @@
 
 import os
 import glob
+import numpy as np
 import mindspore.dataset as ds
 from mindspore.dataset.transforms.py_transforms import Compose
-from mindspore.communication.management import init, get_rank, get_group_size
+from src.config import config as cfg
 from src.transform import Dataset, AddChannel, LoadNifti, Orientation, ScaleIntensityRange, RandSpatialCropSamples, OneHot
 
 class ConvertLabel:
@@ -33,28 +34,22 @@ class ConvertLabel:
         Apply the transform to `img`, assuming `img` is channel-first and
         slicing doesn't apply to the channel dim.
         """
-        data[data > 5] = 0
+        data[data > cfg['upper_limit']] = 0
         data = data - 2
-        data = np.clip(data, 0, 3)
+        data = np.clip(data, 0, cfg['lower_limit'])
         return data
 
     def __call__(self, image, label):
         label = self.operation(label)
         return image, label
 
-def create_dataset(data_path, seg_path, config, is_training=True, run_distribute=False):
+def create_dataset(data_path, seg_path, config, rank_size=1, rank_id=0, is_training=True):
     seg_files = sorted(glob.glob(os.path.join(seg_path, "*.nii.gz")))
     train_files = [os.path.join(data_path, os.path.basename(seg)) for seg in seg_files]
     train_ds = Dataset(data=train_files, seg=seg_files)
-    if run_distribute:
-        init()
-        rank_id = get_rank()
-        rank_size = get_group_size()
-        train_loader = ds.GeneratorDataset(train_ds, column_names=["image", "seg"], num_parallel_workers=4, \
-                                           shuffle=is_training, num_shards=rank_size, shard_id=rank_id)
-    else:
-        train_loader = ds.GeneratorDataset(train_ds, column_names=["image", "seg"], num_parallel_workers=12, \
-                                           shuffle=is_training)
+    train_loader = ds.GeneratorDataset(train_ds, column_names=["image", "seg"], num_parallel_workers=4, \
+                                       shuffle=is_training, num_shards=rank_size, shard_id=rank_id)
+
     if is_training:
         transform_image = Compose([LoadNifti(),
                                    AddChannel(),
@@ -64,7 +59,7 @@ def create_dataset(data_path, seg_path, config, is_training=True, run_distribute
                                    RandSpatialCropSamples(roi_size=config.roi_size, num_samples=2, random_size=False, \
                                                           is_training=is_training),
                                    ConvertLabel(),
-                                   OneHot(num_classes=config.num_classes, is_training=is_training)])
+                                   OneHot(num_classes=config.num_classes)])
     else:
         transform_image = Compose([LoadNifti(),
                                    AddChannel(),

@@ -14,38 +14,67 @@
 # limitations under the License.
 # ============================================================================
 
-if [ $# != 2 ]
+if [ $# -ne 3 ]
 then
-    echo "=============================================================================================================="
-    echo "Usage: bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [DATASET]"
-    echo "Please run the script as: "
-    echo "bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [DATASET]"
-    echo "for example: bash run_distribute_train.sh /absolute/path/to/RANK_TABLE_FILE /absolute/path/to/data"
-    echo "=============================================================================================================="
-    exit 1
+    echo "Usage: sh run_distribute_train_ascend.sh [RANK_TABLE_FILE] [IMAGE_PATH] [SEG_PATH]"
+exit 1
 fi
 
-export HCCL_CONNECT_TIMEOUT=600
-export RANK_SIZE=8
+get_real_path(){
+  if [ "${1:0:1}" == "/" ]; then
+    echo "$1"
+  else
+    echo "$(realpath -m $PWD/$1)"
+  fi
+}
 
-for((i=0;i<RANK_SIZE;i++))
+PATH1=$(get_real_path $1)
+echo $PATH1
+
+if [ ! -f $PATH1 ]
+then
+    echo "error: RANK_TABLE_FILE=$PATH1 is not a file"
+exit 1
+fi
+
+PATH2=$(get_real_path $2)
+echo $PATH2
+if [ ! -d $PATH2 ]
+then
+    echo "error: IMAGE_PATH=$PATH2 is not a file"
+exit 1
+fi
+
+PATH3=$(get_real_path $3)
+echo $PATH3
+if [ ! -d $PATH3 ]
+then
+    echo "error: SEG_PATH=$PATH3 is not a file"
+exit 1
+fi
+
+ulimit -u unlimited
+export DEVICE_NUM=8
+export RANK_SIZE=8
+export RANK_TABLE_FILE=$PATH1
+
+for((i=0; i<${DEVICE_NUM}; i++))
 do
-    rm -rf LOG$i
-    mkdir ./LOG$i
-    cp ./*.py ./LOG$i
-    cp -r ./src ./LOG$i
-    cd ./LOG$i || exit
-    export RANK_TABLE_FILE=$1
-    export RANK_SIZE=8
-    export RANK_ID=$i
     export DEVICE_ID=$i
-    echo "start training for rank $i, device $DEVICE_ID"
+    export RANK_ID=$i
+    rm -rf ./train_parallel$i
+    mkdir ./train_parallel$i
+    cp ../*.py ./train_parallel$i
+    cp *.sh ./train_parallel$i
+    cp -r ../src ./train_parallel$i
+    cd ./train_parallel$i || exit
+    echo "start training for rank $RANK_ID, device $DEVICE_ID"
     env > env.log
 
-    python3 train.py \
+    python train.py \
     --run_distribute=True \
-    --data_url=$2 \
-    --seg_url=$3 > log.txt 2>&1 &
+    --data_url=$PATH2 \
+    --seg_url=$PATH3 > log.txt 2>&1 &
 
     cd ../
 done

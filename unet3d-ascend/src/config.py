@@ -27,4 +27,6 @@ config = EasyDict({
     'overlap': 0.25,
     'min_val': -500,
     'max_val': 1000,
+    'upper_limit': 5,
+    'lower_limit': 3,
 })

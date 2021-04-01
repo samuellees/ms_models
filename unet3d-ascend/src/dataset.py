@@ -19,7 +19,7 @@ import numpy as np
 import mindspore.dataset as ds
 from mindspore.dataset.transforms.py_transforms import Compose
 from src.config import config as cfg
-from src.transform import Dataset, AddChannel, LoadNifti, Orientation, ScaleIntensityRange, RandSpatialCropSamples, OneHot
+from src.transform import Dataset, ExpandChannel, LoadData, Orientation, ScaleIntensityRange, RandomCropSamples, OneHot
 
 class ConvertLabel:
     """
@@ -35,7 +35,7 @@ class ConvertLabel:
         slicing doesn't apply to the channel dim.
         """
         data[data > cfg['upper_limit']] = 0
-        data = data - 2
+        data = data - (cfg['lower_limit'] - 1)
         data = np.clip(data, 0, cfg['lower_limit'])
         return data
 
@@ -51,21 +51,20 @@ def create_dataset(data_path, seg_path, config, rank_size=1, rank_id=0, is_train
                                        shuffle=is_training, num_shards=rank_size, shard_id=rank_id)
 
     if is_training:
-        transform_image = Compose([LoadNifti(),
-                                   AddChannel(),
-                                   Orientation(axcodes="RAS"),
-                                   ScaleIntensityRange(a_min=config.min_val, a_max=config.max_val, b_min=0.0, \
-                                                       b_max=1.0, clip=True),
-                                   RandSpatialCropSamples(roi_size=config.roi_size, num_samples=2, random_size=False, \
-                                                          is_training=is_training),
+        transform_image = Compose([LoadData(),
+                                   ExpandChannel(),
+                                   Orientation(),
+                                   ScaleIntensityRange(src_min=config.min_val, src_max=config.max_val, tgt_min=0.0, \
+                                                       tgt_max=1.0, is_clip=True),
+                                   RandomCropSamples(roi_size=config.roi_size, num_samples=2),
                                    ConvertLabel(),
                                    OneHot(num_classes=config.num_classes)])
     else:
-        transform_image = Compose([LoadNifti(),
-                                   AddChannel(),
-                                   Orientation(axcodes="RAS"),
-                                   ScaleIntensityRange(a_min=config.min_val, a_max=config.max_val, b_min=0.0, \
-                                                       b_max=1.0, clip=True),
+        transform_image = Compose([LoadData(),
+                                   ExpandChannel(),
+                                   Orientation(),
+                                   ScaleIntensityRange(src_min=config.min_val, src_max=config.max_val, tgt_min=0.0, \
+                                                       tgt_max=1.0, is_clip=True),
                                    ConvertLabel()])
 
     train_loader = train_loader.map(operations=transform_image, input_columns=["image", "seg"], num_parallel_workers=12,

@@ -38,10 +38,10 @@ get_real_path(){
 }
 IMAGE_PATH=$(get_real_path $1)
 SEG_PATH=$(get_real_path $2)
-CHECKPOINT_FILE_PATH=$(get_real_path $3)
+CHECKPOINT_PATH=$(get_real_path $3)
 echo $IMAGE_PATH
 echo $SEG_PATH
-echo $CHECKPOINT_FILE_PATH
+echo $CHECKPOINT_PATH
 
 if [ ! -d $IMAGE_PATH ]
 then
@@ -55,9 +55,9 @@ then
 exit 1
 fi
 
-if [ ! -f $CHECKPOINT_FILE_PATH ]
+if [ ! -f $CHECKPOINT_PATH ]
 then
-    echo "error: CHECKPOINT_FILE_PATH=$CHECKPOINT_FILE_PATH is not a file"
+    echo "error: CHECKPOINT_PATH=$CHECKPOINT_PATH is not a file"
 exit 1
 fi
 
@@ -66,17 +66,21 @@ export DEVICE_NUM=1
 export RANK_SIZE=$DEVICE_NUM
 export DEVICE_ID=0
 export RANK_ID=0
-
-if [ -d "eval" ];
-then
-    rm -rf ./eval
-fi
-mkdir ./eval
-cp ../*.py ./eval
-cp *.sh ./eval
-cp -r ../src ./eval
-cd ./eval
-echo "start eval for checkpoint file: ${CHECKPOINT_FILE_PATH}"
-python eval.py --data_url=$IMAGE_PATH --seg_url=$SEG_PATH --ckpt_path=$CHECKPOINT_FILE_PATH > eval.log 2>&1 &
-echo "end eval for checkpoint file: ${CHECKPOINT_FILE_PATH}"
-cd ..
+for file in "${CHECKPOINT_PATH}"
+do
+    if [ -f "eval" ];
+    then
+        rm -rf ./eval
+    fi
+    mkdir ./eval
+    cp ../*.py ./eval
+    cp *.sh ./eval
+    cp -r ../src ./eval
+    cd ./eval
+    env > env.log
+    CHECKPOINT_FILE_PATH=$file
+    echo "start eval for checkpoint file: ${CHECKPOINT_FILE_PATH}"
+    python eval.py --data_url=$IMAGE_PATH --seg_url=$SEG_PATH --ckpt_path=$CHECKPOINT_FILE_PATH > eval.log 2>&1 &
+    echo "end eval for checkpoint file: ${CHECKPOINT_FILE_PATH}"
+    cd ..
+done

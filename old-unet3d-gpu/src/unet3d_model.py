@@ -26,28 +26,22 @@ class UNet3d(nn.Cell):
 
         # down
         self.transpose = P.Transpose()
-        self.down1 = Down(in_channel=self.n_channels, out_channel=16, dtype=mstype.float16).to_float(mstype.float16)
-        self.down2 = Down(in_channel=16, out_channel=32, dtype=mstype.float16).to_float(mstype.float16)
-        self.down3 = Down(in_channel=32, out_channel=64, dtype=mstype.float16).to_float(mstype.float16)
-        self.down4 = Down(in_channel=64, out_channel=128, dtype=mstype.float16).to_float(mstype.float16)
-        self.down5 = Down(in_channel=128, out_channel=256, stride=1, kernel_size=(1, 1, 1), \
-                          dtype=mstype.float16).to_float(mstype.float16)
+        self.down1 = Down(in_channel=1, out_channel=16)
+        self.down2 = Down(in_channel=16, out_channel=32)
+        self.down3 = Down(in_channel=32, out_channel=64)
+        self.down4 = Down(in_channel=64, out_channel=128)
+        self.down5 = Down(in_channel=128, out_channel=256, stride=1, kernel_size=(1, 1, 1))
 
         # up
-        self.up1 = Up(in_channel=256, down_in_channel=128, out_channel=64, \
-                      dtype=mstype.float16).to_float(mstype.float16)
-        self.up2 = Up(in_channel=64, down_in_channel=64, out_channel=32, \
-                      dtype=mstype.float16).to_float(mstype.float16)
-        self.up3 = Up(in_channel=32, down_in_channel=32, out_channel=16, \
-                      dtype=mstype.float16).to_float(mstype.float16)
-        self.up4 = Up(in_channel=16, down_in_channel=16, out_channel=self.n_classes, \
-                      dtype=mstype.float16, is_output=True).to_float(mstype.float16)
+        self.up1 = Up(in_channel=256, down_in_channel=128, out_channel=64)
+        self.up2 = Up(in_channel=64, down_in_channel=64, out_channel=32)
+        self.up3 = Up(in_channel=32, down_in_channel=32, out_channel=16)
+        self.up4 = Up(in_channel=16, down_in_channel=16, out_channel=self.n_classes)
 
         self.cast = P.Cast()
 
 
     def construct(self, input_data):
-        input_data = self.cast(input_data, mstype.float16)
         x1 = self.down1(input_data)
         x2 = self.down2(x1)
         x3 = self.down3(x2)
@@ -58,5 +52,4 @@ class UNet3d(nn.Cell):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
-        x = self.cast(x, mstype.float32)
         return x

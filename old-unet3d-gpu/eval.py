@@ -49,7 +49,7 @@ def test_net(data_dir, seg_dir, ckpt_path, config=None):
     for batch in eval_dataset.create_dict_iterator(num_epochs=1, output_numpy=True):
         image = batch["image"]
         seg = batch["seg"]
-        print("current image shape is {}".format(image.shape), flush=True)
+        print("current image shape is {}".format(image.shape))
         sliding_window_list, slice_list = create_sliding_window(image, config.roi_size, config.overlap)
         image_size = (config.batch_size, config.num_classes) + image.shape[2:]
         output_image = np.zeros(image_size, np.float32)
@@ -62,7 +62,7 @@ def test_net(data_dir, seg_dir, ckpt_path, config=None):
             count_map[slice_] += importance_map
         output_image = output_image / count_map
         dice, _ = CalculateDice(output_image, seg)
-        print("The {} batch dice is {}".format(index, dice), flush=True)
+        print("The {} batch dice is {}".format(index, dice))
         total_dice += dice
         index = index + 1
     avg_dice = total_dice / eval_data_size

@@ -16,10 +16,9 @@
 import os
 import argparse
 import ast
-import mindspore
-import mindspore.nn as nn
-import mindspore.common.dtype as mstype
-from mindspore import Tensor, Model, context
+import torch
+import torch.nn as nn
+from mindspore import Model, context
 from mindspore.context import ParallelMode
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.train.loss_scale_manager import FixedLossScaleManager
@@ -27,7 +26,6 @@ from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, LossMoni
 from src.dataset import create_dataset
 from src.unet3d_model import UNet3d
 from src.config import config as cfg
-from src.lr_schedule import dynamic_lr
 from src.loss import SoftmaxCrossEntropyWithLogits
 
 device_id = int(os.getenv('DEVICE_ID'))
@@ -66,8 +64,7 @@ def train_net(data_dir,
     network = UNet3d(config=config)
 
     loss = SoftmaxCrossEntropyWithLogits()
-    lr = Tensor(dynamic_lr(config, train_data_size), mstype.float32)
-    optimizer = nn.Adam(params=network.trainable_params(), learning_rate=lr)
+    optimizer = nn.Adam(params=network.trainable_params(), learning_rate=config.lr)
     scale_manager = FixedLossScaleManager(config.loss_scale, drop_overflow_update=False)
     network.set_train()
 
@@ -92,3 +89,96 @@ if __name__ == '__main__':
               seg_dir=args.seg_url,
               run_distribute=args.run_distribute,
               config=cfg)
+
+
+
+
+
+
+import argparse
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import time
+import os
+
+from queue import Queue
+
+from src.unet3d_model import UNet3d
+from src.config import config as cfg
+from src.dataset import create_dataset
+from src.loss import SoftmaxCrossEntropyWithLogits
+
+
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser(description='pytorch Unet3D on CUDA')
+  parser.add_argument('--data_url', type=str, default="",
+                      help='path where the data is saved')
+  parser.add_argument('--seg_url', type=str, default="",
+                      help='path where the seg label is saved')
+  parser.add_argument('--device_id', type=int, default=0, help='device id of GPU. (Default: 0)')
+  args = parser.parse_args()
+
+  device = torch.device('cuda:'+str(args.device_id))
+  network = UNet3d(cfg.num_classes, config=cfg)
+  network.to(device)
+  criterion = SoftmaxCrossEntropyWithLogits()
+  optimizer = nn.Adam(learning_rate=cfg.lr)
+  
+  train_dataset = create_dataset(data_path=data_dir, seg_path=seg_dir, config=config, \
+                                rank_size=rank_size, rank_id=rank_id, is_training=True)
+  dataloader = create_dataset_pytorch(args.data_path, is_train=True)
+  step_per_epoch = len(dataloader)
+  scheduler = optim.lr_scheduler.StepLR(
+                            optimizer, 
+                            gamma=cfg.lr_decay_rate, 
+                            step_size=cfg.lr_decay_epoch*step_per_epoch)
+  # scheduler = optim.lr_scheduler.ExponentialLR(
+  #                             optimizer, 
+  #                             gamma=cfg.lr_decay_rate)
+
+  q_ckpt = Queue(maxsize=cfg.keep_checkpoint_max)
+
+  global_step_id = 0
+  for epoch in range(cfg.epoch_size):
+    time_epoch = 0.0
+    torch.cuda.synchronize()
+    for i, data in enumerate(dataloader, 0):
+      time_start = time.time()
+      inputs, labels = data
+      inputs = inputs.to(device)
+      labels = labels.to(device)
+      # zeros the parameter gradients
+      optimizer.zero_grad()
+      outputs = network(inputs)
+      loss = criterion(outputs, labels) 
+      loss.backward()     
+      optimizer.step()  
+      scheduler.step()  
+      # print statistics
+      running_loss = loss.item()
+      torch.cuda.synchronize()
+      time_end = time.time()
+      time_step = time_end - time_start
+      time_epoch = time_epoch + time_step
+      print('Epoch: [%3d/%3d], step: [%5d/%5d], loss: [%6.4f], time: [%.4f]' %
+            (epoch + 1, cfg.epoch_size, i + 1, step_per_epoch, 
+              running_loss, time_step), flush=True)
+      
+      # save checkpoint every epoch
+      global_step_id = global_step_id + 1
+      if global_step_id % cfg.save_checkpoint_steps == 0:
+        if q_ckpt.full():
+          last_file = q_ckpt.get()
+          os.remove(last_file)
+        ckpt_file = ('%s/squeezenet%s_%d-%d.ckpt' % 
+                    (args.ckpt_path, version, epoch + 1, i + 1))
+        q_ckpt.put(ckpt_file)
+        torch.save(network, ckpt_file)
+
+    print('Epoch time: %10.4f, per step time: %7.4f' %
+          (time_epoch, time_epoch / step_per_epoch), flush=True)
+
+  print('Finished Training', flush=True)
+    

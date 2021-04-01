@@ -13,22 +13,20 @@
 # limitations under the License.
 # ============================================================================
 
-from easydict import EasyDict
-config = EasyDict({
-    'model': 'Unet3d',
-    'lr': 0.0005,
-    'epoch_size': 10,
-    'batch_size': 1,
-    'warmup_step': 120,
-    'warmup_ratio': 0.3,
-    'num_classes': 4,
-    'in_channels': 1,
-    'keep_checkpoint_max': 5,
-    'loss_scale': 256.0,
-    'roi_size': [224, 224, 96],
-    'overlap': 0.25,
-    'min_val': -500,
-    'max_val': 1000,
-    'upper_limit': 5,
-    'lower_limit': 3,
-})
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from src.config import config
+
+
+class SoftmaxCrossEntropyWithLogits(nn.Cell):
+    def __init__(self):
+        super(SoftmaxCrossEntropyWithLogits, self).__init__()
+        self.loss_fn = nn.CrossEntropyLoss()
+
+    def construct(self, logits, label):
+        logits = torch.transpose(logits, (0, 2, 3, 4, 1))
+        label = torch.transpose(label, (0, 2, 3, 4, 1))
+        loss = torch.mean(self.loss_fn(torch.reshape(logits, (-1, config['num_classes'])), \
+                                torch.reshape(label, (-1, config['num_classes']))))
+        return loss

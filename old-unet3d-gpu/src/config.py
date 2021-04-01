@@ -16,11 +16,9 @@
 from easydict import EasyDict
 config = EasyDict({
     'model': 'Unet3d',
-    'lr': 0.0005,
-    'epoch_size': 10,
+    'lr': 0.0001,
+    'epoch_size': 50,
     'batch_size': 1,
-    'warmup_step': 120,
-    'warmup_ratio': 0.3,
     'num_classes': 4,
     'in_channels': 1,
     'keep_checkpoint_max': 5,

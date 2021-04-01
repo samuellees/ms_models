@@ -18,8 +18,7 @@ import argparse
 import ast
 import mindspore
 import mindspore.nn as nn
-import mindspore.common.dtype as mstype
-from mindspore import Tensor, Model, context
+from mindspore import Model, context
 from mindspore.context import ParallelMode
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.train.loss_scale_manager import FixedLossScaleManager
@@ -27,7 +26,6 @@ from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, LossMoni
 from src.dataset import create_dataset
 from src.unet3d_model import UNet3d
 from src.config import config as cfg
-from src.lr_schedule import dynamic_lr
 from src.loss import SoftmaxCrossEntropyWithLogits
 
 device_id = int(os.getenv('DEVICE_ID'))
@@ -66,8 +64,7 @@ def train_net(data_dir,
     network = UNet3d(config=config)
 
     loss = SoftmaxCrossEntropyWithLogits()
-    lr = Tensor(dynamic_lr(config, train_data_size), mstype.float32)
-    optimizer = nn.Adam(params=network.trainable_params(), learning_rate=lr)
+    optimizer = nn.Adam(params=network.trainable_params(), learning_rate=config.lr)
     scale_manager = FixedLossScaleManager(config.loss_scale, drop_overflow_update=False)
     network.set_train()
 

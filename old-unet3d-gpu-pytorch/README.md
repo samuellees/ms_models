@@ -37,15 +37,15 @@ Dataset used: [LUNA16](https://luna16.grand-challenge.org/)
 - Description: The data is to automatically detect the location of nodules from volumetric CT images. 888 CT scans from LIDC-IDRI database are provided. The complete dataset is divided into 10 subsets that should be used for the 10-fold cross-validation. All subsets are available as compressed zip files.
 
 - Dataset size：888
-    - Train：878 images
-    - Test：10 images
+    - Train：855 images
+    - Test：33 images
 - Data format：zip
     - Note：Data will be processed in convert_nifti.py
 
 ## [Environment Requirements](#contents)
 
 - Hardware（Ascend）
-    - Prepare hardware environment with Ascend processor.
+    - Prepare hardware environment with Ascend processor. If you want to try Ascend, please send the [application form](https://obs-9be7.obs.cn-east-2.myhuaweicloud.com/file/other/Ascend%20Model%20Zoo%E4%BD%93%E9%AA%8C%E8%B5%84%E6%BA%90%E7%94%B3%E8%AF%B7%E8%A1%A8.docx) to ascend@huawei.com. Once approved, you can get the resources.
 - Framework
     - [MindSpore](https://www.mindspore.cn/install/en)
 - For more information, please check the resources below：
@@ -58,38 +58,35 @@ After installing MindSpore via the official website, you can start training and 
 
 - Select the network and dataset to use
 
-```shell
-
 Convert dataset into mifti format.
 python ./src/convert_nifti.py --input_path=/path/to/input_image/ --output_path=/path/to/output_image/
-
-```
 
 Refer to `src/config.py`. We support some parameter configurations for quick start.
 
 - Run on Ascend
 
 ```python
-
 # run training example
 python train.py --data_url=/path/to/data/ --seg_url=/path/to/segment/ > train.log 2>&1 &
+OR
+bash scripts/run_standalone_train.sh [IMAGE_PATH] [SEG_PATH]
 
 # run distributed training example
 bash scripts/run_distribute_train.sh [RANK_TABLE_FILE] [IMAGE_PATH] [SEG_PATH]
 
 # run evaluation example
 python eval.py --data_url=/path/to/data/ --seg_url=/path/to/segment/ --ckpt_path=/path/to/checkpoint/ > eval.log 2>&1 &
-
-```
+OR
+bash scripts/run_standalone_eval.sh [IMAGE_PATH] [SEG_PATH] [CHECKPOINT]
 
 ## [Script Description](#contents)
 
 ### [Script and Sample Code](#contents)
 
-```text
+```path
 
 .
-└─unet3d
+└─unet3D
   ├── README.md                       // descriptions about Unet3D
   ├── scripts
   │   ├──run_disribute_train.sh       // shell script for distributed on Ascend
@@ -98,10 +95,10 @@ python eval.py --data_url=/path/to/data/ --seg_url=/path/to/segment/ --ckpt_path
   ├── src
   │   ├──config.py                    // parameter configuration
   │   ├──dataset.py                   // creating dataset
-  │   ├──lr_schedule.py               // learning rate scheduler
   │   ├──transform.py                 // handle dataset
   │   ├──convert_nifti.py             // convert dataset
   │   ├──loss.py                      // loss
+  │   ├──conv.py                      // conv components
   │   ├──utils.py                     // General components (callback function)
   │   ├──unet3d_model.py              // Unet3D model
   │   ├──unet3d_parts.py              // Unet3D part
@@ -119,13 +116,11 @@ Parameters for both training and evaluation can be set in config.py
 ```python
 
   'model': 'Unet3d',                  # model name
-  'lr': 0.0005,                       # learning rate
-  'epochs': 10,                       # total training epochs when run 1p
+  'lr': 0.0001,                       # learning rate
+  'epochs': 50,                       # total training epochs when run 1p
   'batchsize': 1,                     # training batch size
-  "warmup_step": 120,                 # warmp up step in lr generator
-  "warmup_ratio": 0.3,                # warpm up ratio
   'num_classes': 4,                   # the number of classes in the dataset
-  'in_channels': 1,                   # the number of channels
+  'num_channels': 1,                  # the number of channels
   'keep_checkpoint_max': 5,           # only keep the last keep_checkpoint_max checkpoint
   'loss_scale': 256.0,                # loss scale
   'roi_size': [224, 224, 96],         # random roi size
@@ -146,6 +141,8 @@ Parameters for both training and evaluation can be set in config.py
 ```shell
 
 python train.py --data_url=/path/to/data/ -seg_url=/path/to/segment/ > train.log 2>&1 &
+OR
+bash scripts/run_standalone_train.sh [IMAGE_PATH] [SEG_PATH]
 
 ```
 
@@ -155,13 +152,13 @@ After training, you'll get some checkpoint files under the script folder by defa
 
 ```shell
 
-epoch: 1 step: 878, loss is 0.55011123
+epoch: 1 step: 855, loss is 0.55011123
 epoch time: 1443410.353 ms, per step time: 1688.199 ms
-epoch: 2 step: 878, loss is 0.58278626
+epoch: 2 step: 855, loss is 0.58278626
 epoch time: 1172136.839 ms, per step time: 1370.920 ms
-epoch: 3 step: 878, loss is 0.43625978
+epoch: 3 step: 855, loss is 0.43625978
 epoch time: 1135890.834 ms, per step time: 1328.537 ms
-epoch: 4 step: 878, loss is 0.06556784
+epoch: 4 step: 855, loss is 0.06556784
 epoch time: 1180467.795 ms, per step time: 1380.664 ms
 
 ```
@@ -182,16 +179,20 @@ The above shell script will run distribute training in the background. You can v
 
 ```shell
 
-epoch: 1 step: 110, loss is 0.8294426
+epoch: 1 step: 107, loss is 0.8294426
 epoch time: 468891.643 ms, per step time: 4382.165 ms
-epoch: 2 step: 110, loss is 0.58278626
+epoch: 2 step: 107, loss is 0.58278626
 epoch time: 165469.201 ms, per step time: 1546.441 ms
-epoch: 3 step: 110, loss is 0.43625978
+epoch: 3 step: 107, loss is 0.43625978
 epoch time: 158915.771 ms, per step time: 1485.194 ms
+epoch: 4 step: 107, loss is 0.31168014
+epoch time: 157590.700 ms, per step time: 1472.810 ms
 ...
-epoch: 9 step: 110, loss is 0.016280059
+epoch: 48 step: 107, loss is 0.030514292
+epoch time: 146814.723 ms, per step time: 1372.100 ms
+epoch: 49 step: 107, loss is 0.016280059
 epoch time: 172815.179 ms, per step time: 1615.095 ms
-epoch: 10 step: 110, loss is 0.020185348
+epoch: 50 step: 107, loss is 0.020185348
 epoch time: 140476.520 ms, per step time: 1312.865 ms
 
 ```
@@ -202,11 +203,13 @@ epoch time: 140476.520 ms, per step time: 1312.865 ms
 
 - evaluation on dataset when running on Ascend
 
-Before running the command below, please check the checkpoint path used for evaluation. Please set the checkpoint path to be the absolute full path, e.g., "username/unet3d/Unet3d-10_110.ckpt".
+Before running the command below, please check the checkpoint path used for evaluation. Please set the checkpoint path to be the absolute full path, e.g., "username/unet3D/Unet3d-50_855.ckpt".
 
 ```shell
 
 python eval.py --data_url=/path/to/data/ --seg_url=/path/to/segment/ --ckpt_path=/path/to/checkpoint/ > eval.log 2>&1 &
+OR
+bash scripts/run_standalone_eval.sh [IMAGE_PATH] [SEG_PATH] [CHECKPOINT_PATH]
 
 ```
 
@@ -215,7 +218,7 @@ The above python command will run in the background. You can view the results th
 ```shell
 
 # grep "eval average dice is:" eval.log
-eval average dice is 0.9502010010453671
+eval average dice is 0.9039010010453671
 
 ```
 
@@ -230,15 +233,15 @@ eval average dice is 0.9502010010453671
 | Model Version       | Unet3D                                                    |
 | Resource            | Ascend 910; CPU 2.60GHz，192cores；Memory，755G            |
 | uploaded Date       | 03/18/2021 (month/day/year)                               |
-| MindSpore Version   | 1.2.0                                                     |
+| MindSpore Version   | 1.1.0                                                     |
 | Dataset             | LUNA16                                                    |
-| Training Parameters | epoch = 10,  batch_size = 1                               |
+| Training Parameters | epoch = 50,  batch_size = 1                               |
 | Optimizer           | Adam                                                      |
 | Loss Function       | SoftmaxCrossEntropyWithLogits                             |
 | Speed               | 8pcs: 1795ms/step                                         |
-| Total time          | 8pcs: 0.62hours                                           |
+| Total time          | 8pcs: 2.47hours                                           |
 | Parameters (M)      | 34                                                        |
-| Scripts             | [unet3d script](https://gitee.com/mindspore/mindspore/tree/r1.2/model_zoo/official/cv/unet3d) |
+| Scripts             | <https://gitee.com/mindspore/mindspore/tree/master/model_zoo/official/cv/unet3D> | <https://gitee.com/mindspore/mindspore/tree/master/model_zoo/official/cv/unet3D> |
 
 #### Inference Performance
 
@@ -247,10 +250,10 @@ eval average dice is 0.9502010010453671
 | Model Version       | Unet3D                      |
 | Resource            | Ascend 910                  |
 | Uploaded Date       | 03/18/2021 (month/day/year) |
-| MindSpore Version   | 1.2.0                       |
+| MindSpore Version   | 1.1.0                       |
 | Dataset             | LUNA16                      |
 | batch_size          | 1                           |
-| Dice                | dice = 0.9502               |
+| Dice                | dice = 0.9039               |
 | Model for inference | 56M(.ckpt file)             |
 
 # [Description of Random Situation](#contents)

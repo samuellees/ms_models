@@ -13,43 +13,86 @@
 # limitations under the License.
 # ============================================================================
 
+from collections.abc import Iterable
 import math
 import numpy as np
 from src.config import config
 
-def correct_nifti_head(img):
+def correct_nifti_header_if_necessary(img_nii):
     """
     Check nifti object header's format, update the header if needed.
     In the updated image pixdim matches the affine.
 
     Args:
-        img: nifti image object
+        img_nii: nifti image object
     """
-    dim = img.header["dim"][0]
+    dim = img_nii.header["dim"][0]
     if dim >= 5:
-        return img
-    pixdim = np.asarray(img.header.get_zooms())[:dim]
-    norm_affine = np.sqrt(np.sum(np.square(img.affine[:dim, :dim]), 0))
+        return img_nii
+    pixdim = np.asarray(img_nii.header.get_zooms())[:dim]
+    norm_affine = np.sqrt(np.sum(np.square(img_nii.affine[:dim, :dim]), 0))
     if np.allclose(pixdim, norm_affine):
-        return img
-    if hasattr(img, "get_sform"):
-        return rectify_header_sform_qform(img)
-    return img
+        return img_nii
+    if hasattr(img_nii, "get_sform"):
+        return rectify_header_sform_qform(img_nii)
+    return img_nii
 
-def get_random_patch(dims, patch_size, rand_fn=None):
+
+def ensure_tuple_rep(tup, dim):
     """
-    Returns a tuple of slices to define a random patch in an array of shape `dims` with size `patch_size`.
+    Returns a copy of `tup` with `dim` values by either shortened or duplicated input.
+
+    Raises:
+        ValueError: When ``tup`` is a sequence and ``tup`` length is not ``dim``.
+    """
+    if len(tup) == dim:
+        return tuple(tup)
+    raise ValueError(f"Sequence must have length {dim}, got {len(tup)}.")
+
+
+def fall_back_tuple(user_provided, default, func=lambda x: x and x > 0):
+    """
+    Refine `user_provided` according to the `default`, and return as a validated tuple
+    """
+    ndim = len(default)
+    user = ensure_tuple_rep(user_provided, ndim)
+    return tuple(user_c if func(user_c) else default_c for default_c, user_c in zip(default, user))
+
+
+def get_valid_patch_size(image_size, patch_size):
+    """
+    Given an image of dimensions `image_size`, return a patch size tuple taking the dimension
+    from `patch_size`.
+    """
+    ndim = len(image_size)
+    patch_size_ = ensure_tuple_size(patch_size, ndim)
+    return tuple(min(ms, ps or ms) for ms, ps in zip(image_size, patch_size_))
+
+
+def ensure_tuple_size(tup, dim, pad_val=0):
+    """
+    Returns a copy of `tup` with `dim` values by either shortened or padded with `pad_val` as necessary.
+    """
+    tup = tuple(tup) + (pad_val,) * dim
+    return tuple(tup[:dim])
+
+
+def get_random_patch(dims, patch_size, rand_state=None):
+    """
+    Returns a tuple of slices to define a random patch in an array of shape `dims` with size `patch_size` or the as
+    close to it as possible within the given dimension.
 
     Args:
         dims: shape of source array
         patch_size: shape of patch size to generate
-        rand_fn: generate random numbers
+        rand_state: a random state object to generate random numbers from
 
     Returns:
         (tuple of slice): a tuple of slice objects defining the patch
     """
-    rand_int = np.random.randint if rand_fn is None else rand_fn.randint
+    rand_int = np.random.randint if rand_state is None else rand_state.randint
     min_corner = tuple(rand_int(0, ms - ps + 1) if ms > ps else 0 for ms, ps in zip(dims, patch_size))
+
     return tuple(slice(mc, mc + ps) for mc, ps in zip(min_corner, patch_size))
 
 
@@ -61,6 +104,7 @@ def first(iterable, default=None):
         return i
     return default
 
+
 def _get_scan_interval(image_size, roi_size, num_image_dims, overlap):
     """
     Compute scan interval according to the image size, roi size and overlap.
@@ -68,9 +112,9 @@ def _get_scan_interval(image_size, roi_size, num_image_dims, overlap):
     use 1 instead to make sure sliding window works.
     """
     if len(image_size) != num_image_dims:
-        raise ValueError("image different from spatial dims.")
+        raise ValueError("image coord different from spatial dims.")
     if len(roi_size) != num_image_dims:
-        raise ValueError("roi size different from spatial dims.")
+        raise ValueError("roi coord different from spatial dims.")
 
     scan_interval = []
     for i in range(num_image_dims):
@@ -95,6 +139,7 @@ def dense_patch_slices(image_size, patch_size, scan_interval):
     """
     num_spatial_dims = len(image_size)
     patch_size = patch_size
+    scan_interval = ensure_tuple_size(scan_interval, num_spatial_dims)
     scan_num = []
     for i in range(num_spatial_dims):
         if scan_interval[i] == 0:

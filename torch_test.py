@@ -46,14 +46,21 @@ import torch.nn.functional as F
 
 
 device = torch.device("cuda:0")
-inputs = torch.ones((1, 1, 224, 224, 96)).type(torch.float32).to(device)
-bn = torch.nn.BatchNorm3d(1, momentum=0.9, affine=True, track_running_stats=True).to(device)
+# inputs = torch.ones((1, 1, 224, 224, 96)).type(torch.float32).to(device)
+# bn = torch.nn.BatchNorm3d(1, momentum=0.9, affine=True, track_running_stats=True).to(device)
 
-output = bn(inputs)
-_ = output.detach().cpu().numpy()
-start = time.time()
-for _ in range(100):
-  output = bn(inputs)
-  _ = output.detach().cpu().numpy()
-end = time.time()
-print("torch BatchNorm3D: ", (end-start)/100)
+# output = bn(inputs)
+# _ = output.detach().cpu().numpy()
+# start = time.time()
+# for _ in range(100):
+#   output = bn(inputs)
+#   _ = output.detach().cpu().numpy()
+# end = time.time()
+# print("torch BatchNorm3D: ", (end-start)/100)
+
+
+inputs = torch.ones((1, 16, 24, 24, 24)).type(torch.float32).to(device)
+input = inputs.permute((0, 2, 3, 4, 1)).contiguous()
+input = input.permute((0, 4, 1, 2, 3))
+conv = torch.nn.Conv3d(16, 32, kernel_size=(3, 3, 3), padding=1, bias=False).to(device)
+conv(input)

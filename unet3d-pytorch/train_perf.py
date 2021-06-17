@@ -68,15 +68,15 @@ def train_net(data_dir,
             torch.cuda.synchronize(0)
             time_start = time.time()
             # zeros the parameter gradients
-            # optimizer.zero_grad()
+            optimizer.zero_grad()
             outputs = network(inputs)
-            # loss = criterion(outputs, labels)
-            # loss.backward()
-            # optimizer.step()
-            # scheduler.step()
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
             # print statistics
-            # running_loss = loss.item()
-            running_loss = 0
+            running_loss = loss.item()
+            # running_loss = 0
             torch.cuda.synchronize(0)
             time_end = time.time()
             time_step = time_end - time_start

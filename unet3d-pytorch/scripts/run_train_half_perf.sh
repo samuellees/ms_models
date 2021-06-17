@@ -18,7 +18,9 @@
 PATH1="/userhome/datasets/LUNA16-NII/train_data"
 PATH2="/userhome/datasets/LUNA16-NII/train_label"
 
-PYTHON_EXE="/root/anaconda3/bin/python -u"
+# PYTHON_EXE="/root/anaconda3/bin/python -u"
+# PYTHON_EXE="/userhome/software/conda_envs/mindspore1.1/bin/python -u"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore1.1_bak/bin/python -u"
 
 ulimit -u unlimited
 export DEVICE_NUM=1

@@ -18,9 +18,7 @@
 PATH1="/userhome/datasets/LUNA16-NII/train_data"
 PATH2="/userhome/datasets/LUNA16-NII/train_label"
 
-# PYTHON_EXE="/root/anaconda3/bin/python -u"
-# PYTHON_EXE="/userhome/software/conda_envs/mindspore1.1/bin/python -u"
-PYTHON_EXE="/userhome/software/conda_envs/mindspore1.1_bak/bin/python -u"
+PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
 
 ulimit -u unlimited
 export DEVICE_NUM=1
@@ -29,15 +27,15 @@ export RANK_ID=0
 export RANK_SIZE=1
 # export GLOG_v=1
 
-rm -rf ./train_perf
-mkdir ./train_perf
-mkdir ./train_perf/ckpt_0
-cp ../*.py ./train_perf
-cp *.sh ./train_perf
-cp -r ../src ./train_perf
-cd ./train_perf || exit
+rm -rf ./train
+mkdir ./train
+mkdir ./train/ckpt_0
+cp ../*.py ./train
+cp *.sh ./train
+cp -r ../src ./train
+cd ./train || exit
 echo "start training for device $DEVICE_ID"
 env > env.log
-$PYTHON_EXE train_perf.py --data_url=$PATH1 --seg_url=$PATH2 > train.log 2>&1
-# $PYTHON_EXE train_perf.py --data_url=$PATH1 --seg_url=$PATH2
+$PYTHON_EXE train.py --data_url=$PATH1 --seg_url=$PATH2 > train.log 2>&1
+# $PYTHON_EXE train.py --data_url=$PATH1 --seg_url=$PATH2
 cd ..

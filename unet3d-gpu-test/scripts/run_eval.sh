@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2021 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,30 +14,30 @@
 # limitations under the License.
 # ============================================================================
 
+PYTHON_EXE="/userhome/software/conda_envs/mindspore1.1/bin/python -u"
 
-PATH1="/userhome/datasets/LUNA16-NII/train_data"
-PATH2="/userhome/datasets/LUNA16-NII/train_label"
+IMAGE_PATH="/userhome/datasets/LUNA16-NII/val_data"
+SEG_PATH="/userhome/datasets/LUNA16-NII/val_label"
+CHECKPOINT_FILE_PATH="/userhome/ms_models/unet3d-gpu/scripts/train/ckpt_0/Unet3d-10_877.ckpt"
 
-# PYTHON_EXE="/root/anaconda3/bin/python -u"
-# PYTHON_EXE="/userhome/software/conda_envs/mindspore-0.7/bin/python -u"
-PYTHON_EXE="/userhome/software/conda_envs/mindspore1.3/bin/python -u"
+
 
 ulimit -u unlimited
 export DEVICE_NUM=1
+export RANK_SIZE=$DEVICE_NUM
 export DEVICE_ID=0
 export RANK_ID=0
-export RANK_SIZE=1
-# export GLOG_v=1
 
-rm -rf ./train
-mkdir ./train
-mkdir ./train/ckpt_0
-cp ../*.py ./train
-cp *.sh ./train
-cp -r ../src ./train
-cd ./train || exit
-echo "start training for device $DEVICE_ID"
-env > env.log
-$PYTHON_EXE train.py --data_url=$PATH1 --seg_url=$PATH2 > train.log 2>&1
-# $PYTHON_EXE train.py --data_url=$PATH1 --seg_url=$PATH2
+if [ -d "eval" ];
+then
+    rm -rf ./eval
+fi
+mkdir ./eval
+cp ../*.py ./eval
+cp *.sh ./eval
+cp -r ../src ./eval
+cd ./eval
+echo "start eval for checkpoint file: ${CHECKPOINT_FILE_PATH}"
+$PYTHON_EXE eval.py --data_url=$IMAGE_PATH --seg_url=$SEG_PATH --ckpt_path=$CHECKPOINT_FILE_PATH > eval.log 2>&1
+echo "end eval for checkpoint file: ${CHECKPOINT_FILE_PATH}"
 cd ..

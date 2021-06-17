@@ -17,29 +17,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-import time
-
-class BatchNorm3d(nn.Module):
-    def __init__(self, num_features, momentum):
-        super().__init__()
-        self.num_features = num_features
-        self.momentum = momentum
-        self.bn = nn.BatchNorm2d(num_features, momentum=momentum)
-
-    def forward(self, x):
-        old_shape = x.shape
-        x = torch.reshape(x, (old_shape[0], old_shape[1], old_shape[2] * old_shape[3], old_shape[4]))
-        x = self.bn(x)
-        x = torch.reshape(x, old_shape)
-        return x
-
-
-def MyBatchNorm3d(num_features, momentum):
-    return BatchNorm3d(num_features, momentum)
-    # return nn.BatchNorm3d(num_features, momentum=momentum)
-
-
 class ResidualUnit(nn.Module):
     def __init__(self, in_channel, out_channel, stride=2, kernel_size=(3, 3, 3), down=True, is_output=False):
         super().__init__()
@@ -52,7 +29,7 @@ class ResidualUnit(nn.Module):
         nn.init.normal_(self.down_conv_1.weight)
         self.is_output = is_output
         if not is_output:
-            self.batchNormal1 = MyBatchNorm3d(num_features=self.out_channel, momentum=0.9)
+            self.batchNormal1 = nn.BatchNorm3d(num_features=self.out_channel, momentum=0.9)
             self.relu1 = nn.PReLU()
             nn.init.constant_(self.relu1.weight, 0.25)
         if self.down:
@@ -65,48 +42,23 @@ class ResidualUnit(nn.Module):
             else:
                 self.residual = nn.Conv3d(in_channel, out_channel, kernel_size=(3, 3, 3), \
                                        stride=self.stride, padding=1, bias=False)
-            self.batchNormal2 = MyBatchNorm3d(num_features=self.out_channel, momentum=0.9)
+            self.batchNormal2 = nn.BatchNorm3d(num_features=self.out_channel, momentum=0.9)
             nn.init.constant_(self.relu2.weight, 0.25)
             nn.init.normal_(self.down_conv_2.weight)
             nn.init.normal_(self.residual.weight)
 
 
     def forward(self, x):
-        # torch.cuda.synchronize(0)
-        # begin = time.time()
         out = self.down_conv_1(x)
-        # torch.cuda.synchronize(0)
-        # print("conv1: ", time.time() - begin)
         if self.is_output:
             return out
-        # begin = time.time()
         out = self.batchNormal1(out)
-        # torch.cuda.synchronize(0)
-        # print("batchNormal1: ", time.time() - begin)
-        # begin = time.time()
         out = self.relu1(out)
-        # torch.cuda.synchronize(0)
-        # print("relu1: ", time.time() - begin)
         if self.down:
-            # begin = time.time()
             out = self.down_conv_2(out)
-            # torch.cuda.synchronize(0)
-            # print("conv2: ", time.time() - begin)
-
-            # begin = time.time()
             out = self.batchNormal2(out)
-            # torch.cuda.synchronize(0)
-            # print("batchNormal2: ", time.time() - begin)
-
-            # begin = time.time()
             out = self.relu2(out)
-            # torch.cuda.synchronize(0)
-            # print("relu2: ", time.time() - begin)
-
-            # begin = time.time()
             res = self.residual(x)
-            # torch.cuda.synchronize(0)
-            # print("conv3: ", time.time() - begin)
         else:
             res = x
         return out + res
@@ -138,34 +90,15 @@ class Up(nn.Module):
 
         self.conv = ResidualUnit(self.out_channel, self.out_channel, stride=1, down=False, \
                                  is_output=is_output)
-        self.batchNormal1 = MyBatchNorm3d(num_features=self.out_channel, momentum=0.9)
+        self.batchNormal1 = nn.BatchNorm3d(num_features=self.out_channel, momentum=0.9)
         self.relu = nn.PReLU()
         nn.init.constant_(self.relu.weight, 0.25)
         nn.init.normal_(self.conv3d_transpose.weight)
 
     def forward(self, input_data, down_input):
-        # begin = time.time()
         x = torch.cat((input_data, down_input), 1)
-        # torch.cuda.synchronize(0)
-        # print("cat: ", time.time() - begin)
-        # torch.cuda.synchronize(0)
-        # begin = time.time()
         x = self.conv3d_transpose(x)
-        # torch.cuda.synchronize(0)
-        # print("conv3d_transpose: ", time.time() - begin)
-        # torch.cuda.synchronize(0)
-        # begin = time.time()
         x = self.batchNormal1(x)
-        # torch.cuda.synchronize(0)
-        # print("batchNormal1: ", time.time() - begin)
-        # torch.cuda.synchronize(0)
-        # begin = time.time()
         x = self.relu(x)
-        # torch.cuda.synchronize(0)
-        # print("relu: ", time.time() - begin)
-        # torch.cuda.synchronize(0)
-        # begin = time.time()
         x = self.conv(x)
-        # torch.cuda.synchronize(0)
-        # print("conv4: ", time.time() - begin)
         return x

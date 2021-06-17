@@ -94,6 +94,6 @@ def create_dataset(data_path, seg_path, config, is_training=True):
 
     dataset = TorchDataset(data=train_files, seg=seg_files, transform=transform_image)
     data_loader = torch.utils.data.DataLoader(dataset=dataset, 
-            batch_size=cfg.batch_size, shuffle=True, drop_last=True, num_workers=2)
+            batch_size=cfg.batch_size, shuffle=True, drop_last=True, num_workers=8)
 
     return data_loader

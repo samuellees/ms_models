@@ -28,6 +28,7 @@ from src.unet3d_model import UNet3d
 from src.config import config as cfg
 from src.lr_schedule import dynamic_lr_scheduler
 from src.loss import SoftmaxCrossEntropyWithLogits, DiceLoss
+from torch.cuda.amp import autocast as autocast, GradScaler
 
 torch.manual_seed(1)
 torch.cuda.manual_seed(1)
@@ -51,11 +52,13 @@ def train_net(data_dir,
 
     network = UNet3d(config=config)
     criterion = DiceLoss()
+    # criterion = SoftmaxCrossEntropyWithLogits()
     optimizer = torch.optim.Adam(params=network.parameters(), lr=1)
     scheduler = dynamic_lr_scheduler(config, train_data_size, optimizer)
     device = torch.device('cuda:0')
     network.to(device)
 
+    scaler = GradScaler(init_scale=config.loss_scale)
     print("============== Starting Training ==============")
     network.train()
     step_per_epoch = train_data_size
@@ -71,11 +74,15 @@ def train_net(data_dir,
             labels = labels.to(device)
             # zeros the parameter gradients
             optimizer.zero_grad()
-            outputs = network(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+
+            with autocast():
+                outputs = network(inputs)
+                loss = criterion(outputs, labels)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             scheduler.step()
+
             # print statistics
             running_loss = loss.item()
             torch.cuda.synchronize(0)
